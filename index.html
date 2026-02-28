@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>my website</title>
-    <!-- 引入 Supabase 客户端库 -->
+    <title>qawz 的小站</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -32,10 +31,10 @@
     </div>
 
     <script>
-        // ===== 你的 Supabase 配置 =====
+        // ===== 你的 Supabase 配置（已填写） =====
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-        // ==============================
+        // =======================================
 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -56,13 +55,14 @@
             const boardDiv = document.getElementById('board');
             boardDiv.innerHTML = '';
 
-            // 板块1 - 注意：字段名请按实际修改
+            // ⚠️ 请根据你的实际字段名修改下面的字段名！
+            // 板块1
             const card1 = document.createElement('div');
             card1.className = 'card';
             card1.innerHTML = `
                 <h2>${config.board1_title}</h2>
-                <p>${config.board1_description}</p>
-                ${config.board1_button_link ? `<a href="${config.board1_button_link}" class="btn" target="_blank">${config.board1_button_text}</a>` : ''}
+                <p>${config.board1_descrj}</p>          <!-- 这里如果字段名是 board1_descrj 就保留，如果是 board1_description 就改回去 -->
+                ${config.board1_button_link ? `<a href="${config.board1_button_link}" class="btn" target="_blank">${config.board1_button}</a>` : ''}  <!-- 如果按钮文字字段是 board1_button 就保留，如果是 board1_button_text 就改回去 -->
             `;
             boardDiv.appendChild(card1);
 
@@ -71,8 +71,8 @@
             card2.className = 'card';
             card2.innerHTML = `
                 <h2>${config.board2_title}</h2>
-                <p>${config.board2_description}</p>
-                ${config.board2_button_link ? `<a href="${config.board2_button_link}" class="btn" target="_blank">${config.board2_button_text}</a>` : ''}
+                <p>${config.board2_descrj || ''}</p>    <!-- 同样检查字段名 -->
+                ${config.board2_button_link ? `<a href="${config.board2_button_link}" class="btn" target="_blank">${config.board2_buttor}</a>` : ''}  <!-- 检查按钮文字字段 -->
             `;
             boardDiv.appendChild(card2);
         }
