@@ -148,9 +148,12 @@
     </div>
 
     <script>
+        // ===== 修复点：使用 supabaseClient 避免与全局 supabase 冲突 =====
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 创建客户端实例，变量名改为 supabaseClient
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let blocks = [];
         let globalConfig = {};
@@ -166,7 +169,7 @@
         // 加载所有数据
         async function loadAll() {
             // 加载全局配置
-            const { data: config, error: configErr } = await supabase
+            const { data: config, error: configErr } = await supabaseClient
                 .from('config')
                 .select('*')
                 .eq('id', 1)
@@ -188,7 +191,7 @@
             document.getElementById('cardsPerPage').value = config.cards_per_page || 4;
 
             // 加载板块
-            const { data: blocksData, error: blocksErr } = await supabase
+            const { data: blocksData, error: blocksErr } = await supabaseClient
                 .from('blocks')
                 .select('*')
                 .order('sort_order', { ascending: true });
@@ -251,7 +254,7 @@
         }
 
         // 模态框控制
-        function showAddModal() {
+        window.showAddModal = function() {
             document.getElementById('modalTitle').innerText = '添加板块';
             document.getElementById('editingBlockId').value = '';
             document.getElementById('modalTitleInput').value = '';
@@ -260,11 +263,11 @@
             document.getElementById('modalBtnLinkInput').value = '';
             document.getElementById('modalHiddenCheck').checked = false;
             document.getElementById('blockModal').style.display = 'flex';
-        }
-        function hideModal() {
+        };
+        window.hideModal = function() {
             document.getElementById('blockModal').style.display = 'none';
-        }
-        function editBlock(id) {
+        };
+        window.editBlock = function(id) {
             const block = blocks.find(b => b.id === id);
             if (!block) return;
             document.getElementById('modalTitle').innerText = '编辑板块';
@@ -275,8 +278,8 @@
             document.getElementById('modalBtnLinkInput').value = block.button_link || '';
             document.getElementById('modalHiddenCheck').checked = block.hidden || false;
             document.getElementById('blockModal').style.display = 'flex';
-        }
-        async function saveBlock() {
+        };
+        window.saveBlock = async function() {
             const id = document.getElementById('editingBlockId').value;
             const blockData = {
                 title: document.getElementById('modalTitleInput').value,
@@ -287,7 +290,7 @@
             };
             if (id) {
                 // 更新
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('blocks')
                     .update(blockData)
                     .eq('id', id);
@@ -296,26 +299,26 @@
                 // 新增，sort_order 设为当前最大+1
                 const maxOrder = blocks.length > 0 ? Math.max(...blocks.map(b => b.sort_order)) : 0;
                 blockData.sort_order = maxOrder + 1;
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('blocks')
                     .insert([blockData]);
                 if (error) alert('添加失败：' + error.message);
             }
             hideModal();
             await loadAll();
-        }
-        async function deleteBlock(id) {
+        };
+        window.deleteBlock = async function(id) {
             if (!confirm('确定删除此板块吗？')) return;
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('blocks')
                 .delete()
                 .eq('id', id);
             if (error) alert('删除失败：' + error.message);
             else await loadAll();
-        }
+        };
 
         // 保存所有配置（全局设置 + 板块排序）
-        async function saveAll() {
+        window.saveAll = async function() {
             // 保存全局配置
             const globalUpdates = {
                 container_opacity: parseInt(document.getElementById('containerOpacity').value),
@@ -331,7 +334,7 @@
                 globalUpdates.admin_password = newPass;
             }
 
-            const { error: configErr } = await supabase
+            const { error: configErr } = await supabaseClient
                 .from('config')
                 .update(globalUpdates)
                 .eq('id', 1);
@@ -344,7 +347,7 @@
             // 保存板块排序
             for (let i = 0; i < blocks.length; i++) {
                 const block = blocks[i];
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('blocks')
                     .update({ sort_order: i })
                     .eq('id', block.id);
@@ -359,17 +362,17 @@
             document.getElementById('saveMsg').style.color = 'green';
             document.getElementById('newPassword').value = '';
             setTimeout(() => document.getElementById('saveMsg').innerText = '', 2000);
-        }
+        };
 
         // 登录验证
-        async function login() {
+        window.login = async function() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             if (username !== 'admin') {
                 document.getElementById('loginError').innerText = '用户名或密码错误';
                 return;
             }
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('config')
                 .select('admin_password')
                 .eq('id', 1)
@@ -386,14 +389,14 @@
             } else {
                 document.getElementById('loginError').innerText = '用户名或密码错误';
             }
-        }
+        };
 
-        function logout() {
+        window.logout = function() {
             document.getElementById('loginBox').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
             document.getElementById('password').value = '';
             document.getElementById('newPassword').value = '';
-        }
+        };
     </script>
 </body>
 </html>
