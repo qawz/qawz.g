@@ -61,7 +61,7 @@
         }
         .btn:hover { background: #764ba2; }
 
-        /* 个人信息栏 */
+        /* 个人信息栏（不含QQ） */
         .info-bar {
             background: #fff;
             border-radius: 15px;
@@ -78,18 +78,6 @@
             display: inline-block;
         }
         .info-bar a:hover {
-            text-decoration: underline;
-        }
-        .info-item {
-            display: inline-block;
-            margin: 5px 15px;
-            cursor: pointer;
-        }
-        .info-item.qq {
-            color: #667eea;
-            cursor: pointer;
-        }
-        .info-item.qq:hover {
             text-decoration: underline;
         }
 
@@ -152,11 +140,10 @@
         </div>
         <h1>主页</h1>
         <div class="board" id="board"></div>
-        <!-- 个人信息栏 -->
+        <!-- 个人信息栏（不含QQ） -->
         <div class="info-bar" id="infoBar">
             <a href="https://github.com/qawz" target="_blank">GitHub</a>
             <a href="https://space.bilibili.com/529302151" target="_blank">Bilibili</a>
-            <span class="info-item qq" onclick="copyQQ()">QQ: 3636270749</span>
             <a href="mailto:wmz17wmz@outlook.com">Outlook</a>
             <a href="mailto:wmz17wmz@qq.com">QQ邮箱</a>
         </div>
@@ -165,7 +152,7 @@
             <span id="pageInfo">第 1 页 / 共 1 页</span>
             <button id="nextPage" onclick="changePage(1)">下一页</button>
         </div>
-        <footer>© 2026 GitHub, Inc.</footer>
+        <footer>Hosted on GitHub Pages · 2026</footer>
     </div>
 
     <script>
@@ -180,7 +167,6 @@
         let globalConfig = {};
 
         async function loadConfig() {
-            // 加载全局配置
             const { data: config, error: configErr } = await supabaseClient
                 .from('config')
                 .select('*')
@@ -195,7 +181,6 @@
         }
 
         async function loadBlocks() {
-            // 加载板块（只取未隐藏的，按顺序排序）
             const { data: blocks, error: blocksErr } = await supabaseClient
                 .from('blocks')
                 .select('*')
@@ -250,17 +235,7 @@
             }
         };
 
-        // 复制QQ号码
-        window.copyQQ = function() {
-            navigator.clipboard.writeText('3636270749').then(() => {
-                alert('QQ号已复制到剪贴板');
-            }).catch(() => {
-                alert('复制失败，请手动复制');
-            });
-        };
-
         function setBackground(config) {
-            // 清除已有背景
             const oldVideo = document.getElementById('bg-video');
             if (oldVideo) oldVideo.remove();
             const oldIframe = document.getElementById('bg-iframe');
@@ -316,7 +291,6 @@
                 return;
             }
 
-            // 主区域样式
             const container = document.getElementById('mainContainer');
             const containerOpacity = (config.container_opacity !== null ? config.container_opacity : 100) / 100;
             container.style.background = `rgba(255, 255, 255, ${containerOpacity})`;
@@ -326,17 +300,14 @@
                 container.classList.remove('blur');
             }
 
-            // 个人信息栏透明度（与卡片相同）
             const infoBar = document.getElementById('infoBar');
             const cardOpacity = config.card_opacity !== null ? config.card_opacity / 100 : 1;
             infoBar.style.opacity = cardOpacity;
 
-            // 加载板块
             allCards = await loadBlocks();
             cardsPerPage = config.cards_per_page || 4;
             renderBoard();
 
-            // 设置背景
             setBackground(config);
         })();
     </script>
