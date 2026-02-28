@@ -3,15 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理后台 - 动态板块</title>
+    <title>管理后台</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* ... 样式保持不变，增加板块列表的样式 ... */
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .login-box, .admin-panel { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 500px; max-width: 100%; }
+        h2 { margin-top: 0; color: #333; }
+        input, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        button { background: #667eea; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px; }
+        button:hover { background: #764ba2; }
+        .error { color: red; font-size: 0.9em; margin: 5px 0; }
+        .field-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        hr { margin: 20px 0; border: none; border-top: 1px solid #eee; }
+        small { color: #666; font-size: 0.85em; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+        .checkbox-group input[type="checkbox"] { width: auto; margin: 0; }
+        .slider-group { display: flex; align-items: center; gap: 10px; }
+        .slider-group input[type=range] { flex: 1; }
+        #containerOpacityValue, #cardOpacityValue { font-weight: bold; min-width: 3em; text-align: right; }
+        .row-flex { display: flex; gap: 10px; align-items: center; }
+
+        /* 板块列表样式 */
+        .blocks-list { margin: 20px 0; }
+        .block-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            cursor: grab;
+        }
+        .block-item.dragging { opacity: 0.5; }
+        .block-item button { width: auto; padding: 4px 8px; margin: 0; }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 400px;
+            max-width: 90%;
+        }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- 登录框不变 -->
+        <!-- 登录框 -->
         <div id="loginBox" class="login-box">
             <h2>管理员登录</h2>
             <input type="text" id="username" placeholder="用户名" value="admin">
@@ -24,29 +78,61 @@
         <div id="adminPanel" class="admin-panel" style="display:none;">
             <h2>配置网站</h2>
 
-            <!-- 全局设置区域（与之前相同） -->
+            <!-- 全局设置区域 -->
             <h3>全局外观</h3>
-            <!-- ... 主区域透明度、卡片透明度、背景视频、背景图片、分页数量、修改密码等控件保持不变 ... -->
-
-            <hr>
-
-            <!-- 动态板块管理 -->
-            <h3>📦 板块管理 <button onclick="showAddBlockModal()" style="width:auto; padding:5px 10px; margin-left:10px;">➕ 添加板块</button></h3>
-            <div id="blocksList" class="blocks-list">
-                <!-- 板块列表会动态渲染到这里 -->
+            <div class="field-group">
+                <label>🔲 主区域背景透明度</label>
+                <div class="slider-group">
+                    <input type="range" id="containerOpacity" min="0" max="100" value="100" step="1">
+                    <span id="containerOpacityValue">100%</span>
+                </div>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="containerBlur">
+                <label>启用背景模糊效果</label>
+            </div>
+            <div class="field-group">
+                <label>🔮 卡片透明度</label>
+                <div class="slider-group">
+                    <input type="range" id="cardOpacity" min="0" max="100" value="100" step="1">
+                    <span id="cardOpacityValue">100%</span>
+                </div>
+            </div>
+            <div class="field-group">
+                <label>🎬 背景视频 URL</label>
+                <input type="text" id="bgVideoUrl" placeholder="https://... 或 B站嵌入链接">
+                <small>支持 MP4 直链或 B站嵌入链接</small>
+            </div>
+            <div class="field-group">
+                <label>🖼️ 背景图片 URL</label>
+                <input type="text" id="bgImageUrl" placeholder="https://...">
+                <small>无视频时使用此图片</small>
+            </div>
+            <div class="field-group">
+                <label>📄 每页显示卡片数</label>
+                <input type="number" id="cardsPerPage" value="4" min="1" max="10">
             </div>
             <hr>
 
-            <!-- 保存所有设置 -->
+            <!-- 动态板块管理 -->
+            <h3>📦 板块管理 <button onclick="showAddModal()" style="width:auto; padding:5px 10px; margin-left:10px;">➕ 添加板块</button></h3>
+            <div id="blocksList" class="blocks-list"></div>
+            <hr>
+
+            <!-- 修改密码 -->
+            <div class="field-group">
+                <label>修改密码（留空则不修改）</label>
+                <input type="password" id="newPassword" placeholder="新密码">
+            </div>
             <button onclick="saveAll()">保存所有配置</button>
             <button onclick="logout()" style="background:#aaa;">退出登录</button>
             <p id="saveMsg" style="color:green;"></p>
         </div>
     </div>
 
-    <!-- 添加/编辑板块的模态框（简单使用内联，也可以用dialog） -->
-    <div id="blockModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
-        <div style="background:white; padding:30px; border-radius:15px; width:400px;">
+    <!-- 添加/编辑板块的模态框 -->
+    <div id="blockModal" class="modal">
+        <div class="modal-content">
             <h3 id="modalTitle">添加板块</h3>
             <input type="hidden" id="editingBlockId">
             <div class="field-group"><label>标题</label><input type="text" id="modalTitleInput"></div>
@@ -54,7 +140,7 @@
             <div class="field-group"><label>按钮文字</label><input type="text" id="modalBtnTextInput"></div>
             <div class="field-group"><label>链接地址</label><input type="text" id="modalBtnLinkInput"></div>
             <div class="checkbox-group"><input type="checkbox" id="modalHiddenCheck"> <label>隐藏此板块</label></div>
-            <div style="display:flex; gap:10px; margin-top:20px;">
+            <div class="modal-buttons">
                 <button onclick="saveBlock()">保存</button>
                 <button onclick="hideModal()">取消</button>
             </div>
@@ -66,33 +152,55 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 全局变量
         let blocks = [];
         let globalConfig = {};
 
-        // 登录等函数保持不变 ...
+        // 实时显示滑块值
+        document.getElementById('containerOpacity').addEventListener('input', function(e) {
+            document.getElementById('containerOpacityValue').innerText = e.target.value + '%';
+        });
+        document.getElementById('cardOpacity').addEventListener('input', function(e) {
+            document.getElementById('cardOpacityValue').innerText = e.target.value + '%';
+        });
 
+        // 加载所有数据
         async function loadAll() {
             // 加载全局配置
-            const { data: configData, error: configError } = await supabase
+            const { data: config, error: configErr } = await supabase
                 .from('config')
                 .select('*')
                 .eq('id', 1)
                 .single();
-            if (configError) alert('读取配置失败：' + configError.message);
-            else globalConfig = configData;
+            if (configErr) {
+                alert('读取配置失败：' + configErr.message);
+                return;
+            }
+            globalConfig = config;
+
+            // 填充全局设置表单
+            document.getElementById('containerOpacity').value = config.container_opacity ?? 100;
+            document.getElementById('containerOpacityValue').innerText = (config.container_opacity ?? 100) + '%';
+            document.getElementById('containerBlur').checked = config.container_blur ?? false;
+            document.getElementById('cardOpacity').value = config.card_opacity ?? 100;
+            document.getElementById('cardOpacityValue').innerText = (config.card_opacity ?? 100) + '%';
+            document.getElementById('bgVideoUrl').value = config.background_video_url || '';
+            document.getElementById('bgImageUrl').value = config.background_image || '';
+            document.getElementById('cardsPerPage').value = config.cards_per_page || 4;
 
             // 加载板块
-            const { data: blocksData, error: blocksError } = await supabase
+            const { data: blocksData, error: blocksErr } = await supabase
                 .from('blocks')
                 .select('*')
                 .order('sort_order', { ascending: true });
-            if (blocksError) alert('读取板块失败：' + blocksError.message);
-            else blocks = blocksData;
-
+            if (blocksErr) {
+                alert('读取板块失败：' + blocksErr.message);
+                return;
+            }
+            blocks = blocksData;
             renderBlocks();
         }
 
+        // 渲染板块列表
         function renderBlocks() {
             const container = document.getElementById('blocksList');
             container.innerHTML = '';
@@ -103,7 +211,7 @@
                 div.dataset.id = block.id;
                 div.dataset.index = index;
                 div.innerHTML = `
-                    <span style="cursor:grab;">⋮⋮</span>
+                    <span style="cursor:grab; font-size:1.2em;">⋮⋮</span>
                     <strong>${block.title || '无标题'}</strong> ${block.hidden ? '(隐藏)' : ''}
                     <div style="margin-left:auto;">
                         <button onclick="editBlock(${block.id})">✏️</button>
@@ -118,31 +226,32 @@
             });
         }
 
-        // 拖拽排序逻辑
+        // 拖拽排序
         let draggedIndex = null;
         function handleDragStart(e) {
             draggedIndex = e.target.closest('.block-item').dataset.index;
+            e.target.classList.add('dragging');
         }
         function handleDragOver(e) {
             e.preventDefault();
         }
         function handleDrop(e) {
             e.preventDefault();
-            const targetIndex = e.target.closest('.block-item')?.dataset.index;
+            const target = e.target.closest('.block-item');
+            if (!target) return;
+            const targetIndex = target.dataset.index;
             if (draggedIndex !== null && targetIndex !== null && draggedIndex !== targetIndex) {
-                // 交换顺序
                 const newBlocks = [...blocks];
                 const [moved] = newBlocks.splice(draggedIndex, 1);
                 newBlocks.splice(targetIndex, 0, moved);
-                // 更新 sort_order
-                newBlocks.forEach((block, idx) => { block.sort_order = idx; });
                 blocks = newBlocks;
                 renderBlocks();
             }
+            document.querySelectorAll('.block-item').forEach(el => el.classList.remove('dragging'));
         }
 
-        // 添加/编辑模态框
-        function showAddBlockModal() {
+        // 模态框控制
+        function showAddModal() {
             document.getElementById('modalTitle').innerText = '添加板块';
             document.getElementById('editingBlockId').value = '';
             document.getElementById('modalTitleInput').value = '';
@@ -152,7 +261,9 @@
             document.getElementById('modalHiddenCheck').checked = false;
             document.getElementById('blockModal').style.display = 'flex';
         }
-
+        function hideModal() {
+            document.getElementById('blockModal').style.display = 'none';
+        }
         function editBlock(id) {
             const block = blocks.find(b => b.id === id);
             if (!block) return;
@@ -165,11 +276,6 @@
             document.getElementById('modalHiddenCheck').checked = block.hidden || false;
             document.getElementById('blockModal').style.display = 'flex';
         }
-
-        function hideModal() {
-            document.getElementById('blockModal').style.display = 'none';
-        }
-
         async function saveBlock() {
             const id = document.getElementById('editingBlockId').value;
             const blockData = {
@@ -196,9 +302,8 @@
                 if (error) alert('添加失败：' + error.message);
             }
             hideModal();
-            await loadAll(); // 重新加载
+            await loadAll();
         }
-
         async function deleteBlock(id) {
             if (!confirm('确定删除此板块吗？')) return;
             const { error } = await supabase
@@ -209,21 +314,86 @@
             else await loadAll();
         }
 
+        // 保存所有配置（全局设置 + 板块排序）
         async function saveAll() {
-            // 保存全局配置（略，与之前相同）
-            // 保存板块排序顺序
+            // 保存全局配置
+            const globalUpdates = {
+                container_opacity: parseInt(document.getElementById('containerOpacity').value),
+                container_blur: document.getElementById('containerBlur').checked,
+                card_opacity: parseInt(document.getElementById('cardOpacity').value),
+                background_video_url: document.getElementById('bgVideoUrl').value,
+                background_image: document.getElementById('bgImageUrl').value,
+                cards_per_page: parseInt(document.getElementById('cardsPerPage').value)
+            };
+
+            const newPass = document.getElementById('newPassword').value;
+            if (newPass) {
+                globalUpdates.admin_password = newPass;
+            }
+
+            const { error: configErr } = await supabase
+                .from('config')
+                .update(globalUpdates)
+                .eq('id', 1);
+            if (configErr) {
+                document.getElementById('saveMsg').innerText = '保存全局设置失败：' + configErr.message;
+                document.getElementById('saveMsg').style.color = 'red';
+                return;
+            }
+
+            // 保存板块排序
             for (let i = 0; i < blocks.length; i++) {
                 const block = blocks[i];
-                await supabase
+                const { error } = await supabase
                     .from('blocks')
                     .update({ sort_order: i })
                     .eq('id', block.id);
+                if (error) {
+                    document.getElementById('saveMsg').innerText = '保存排序失败：' + error.message;
+                    document.getElementById('saveMsg').style.color = 'red';
+                    return;
+                }
             }
-            alert('保存成功！');
+
+            document.getElementById('saveMsg').innerText = '保存成功！';
+            document.getElementById('saveMsg').style.color = 'green';
+            document.getElementById('newPassword').value = '';
+            setTimeout(() => document.getElementById('saveMsg').innerText = '', 2000);
         }
 
-        // 登录成功后调用 loadAll
-        async function login() { /* ... 同前 ... */ }
+        // 登录验证
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (username !== 'admin') {
+                document.getElementById('loginError').innerText = '用户名或密码错误';
+                return;
+            }
+            const { data, error } = await supabase
+                .from('config')
+                .select('admin_password')
+                .eq('id', 1)
+                .single();
+            if (error || !data) {
+                document.getElementById('loginError').innerText = '验证失败，请稍后重试';
+                return;
+            }
+            if (data.admin_password === password) {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                await loadAll();
+                document.getElementById('loginError').innerText = '';
+            } else {
+                document.getElementById('loginError').innerText = '用户名或密码错误';
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginBox').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('password').value = '';
+            document.getElementById('newPassword').value = '';
+        }
     </script>
 </body>
 </html>
