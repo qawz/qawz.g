@@ -39,6 +39,7 @@
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: opacity 0.3s;
         }
         .card h2 { margin-top: 0; color: #667eea; }
         .card p { color: #555; }
@@ -107,9 +108,13 @@
             const boardDiv = document.getElementById('board');
             boardDiv.innerHTML = '';
 
+            // 获取透明度值（0-100），转换为0-1
+            const opacity = (config.card_opacity !== null ? config.card_opacity : 100) / 100;
+
             function createCard(title, desc, btnText, btnLink) {
                 const card = document.createElement('div');
                 card.className = 'card';
+                card.style.opacity = opacity;  // 应用透明度
                 card.innerHTML = `
                     <h2>${title || ''}</h2>
                     <p>${desc || ''}</p>
