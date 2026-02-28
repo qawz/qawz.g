@@ -1,42 +1,344 @@
-<script>
-    const SUPABASE_URL = '...';
-    const SUPABASE_ANON_KEY = '...';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>qawz 的小站</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            position: relative;
+            z-index: 1;
+            transition: background 0.3s, backdrop-filter 0.3s;
+        }
+        .container.blur {
+            backdrop-filter: blur(10px);
+        }
+        h1 { color: #333; }
+        .admin-link { text-align: right; margin-bottom: 20px; }
+        .admin-link a { color: #999; text-decoration: none; font-size: 0.9em; }
+        .board {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .card {
+            flex: 0 1 300px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: opacity 0.3s;
+        }
+        .card h2 { margin-top: 0; color: #667eea; }
+        .card p { color: #555; }
+        .btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+        .btn:hover { background: #764ba2; }
 
-    let allCards = [];
-    let currentPage = 1;
-    let cardsPerPage = 4;
-    let globalConfig = {};
+        /* 个人信息栏 */
+        .info-bar {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 30px 0 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: opacity 0.3s;
+            text-align: center;
+        }
+        .info-bar a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+            display: inline-block;
+        }
+        .info-bar a:hover {
+            text-decoration: underline;
+        }
+        .info-item {
+            display: inline-block;
+            margin: 5px 15px;
+            cursor: pointer;
+        }
+        .info-item.qq {
+            color: #667eea;
+            cursor: pointer;
+        }
+        .info-item.qq:hover {
+            text-decoration: underline;
+        }
 
-    async function loadData() {
-        // 加载全局配置
-        const { data: config, error: configErr } = await supabase
-            .from('config')
-            .select('*')
-            .eq('id', 1)
-            .single();
-        if (configErr) console.error('配置加载失败', configErr);
-        else globalConfig = config;
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #aaa;
+        }
 
-        // 加载板块（只取未隐藏的，按顺序排序）
-        const { data: blocks, error: blocksErr } = await supabase
-            .from('blocks')
-            .select('*')
-            .eq('hidden', false)
-            .order('sort_order', { ascending: true });
-        if (blocksErr) console.error('板块加载失败', blocksErr);
-        else allCards = blocks.map(b => ({
-            title: b.title,
-            description: b.description,
-            buttonText: b.button_text,
-            buttonLink: b.button_link
-        }));
+        /* 分页控件 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        .pagination button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination span {
+            font-size: 16px;
+            color: #333;
+        }
 
-        cardsPerPage = globalConfig.cards_per_page || 4;
-        renderBoard();
-        setBackground(globalConfig);
-    }
+        #bg-video, #bg-iframe {
+            position: fixed;
+            top: 0;
+            left: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            object-fit: cover;
+            border: none;
+            pointer-events: none;
+        }
+        #bg-iframe {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="mainContainer">
+        <div class="admin-link">
+            <a href="admin.html">⚙️ 管理后台</a>
+        </div>
+        <h1>qawz 的小站</h1>
+        <div class="board" id="board"></div>
+        <!-- 个人信息栏 -->
+        <div class="info-bar" id="infoBar">
+            <a href="https://github.com/qawz" target="_blank">GitHub</a>
+            <a href="https://space.bilibili.com/529302151" target="_blank">Bilibili</a>
+            <span class="info-item qq" onclick="copyQQ()">QQ: 3636270749</span>
+            <a href="mailto:wmz17wmz@outlook.com">Outlook</a>
+            <a href="mailto:wmz17wmz@qq.com">QQ邮箱</a>
+        </div>
+        <div class="pagination" id="pagination">
+            <button id="prevPage" onclick="changePage(-1)">上一页</button>
+            <span id="pageInfo">第 1 页 / 共 1 页</span>
+            <button id="nextPage" onclick="changePage(1)">下一页</button>
+        </div>
+        <footer>Hosted on GitHub Pages · 2026</footer>
+    </div>
 
-    // renderBoard 与之前相同，直接使用 allCards 分页
-    // setBackground 同前
-</script>
+    <script>
+        const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allCards = [];
+        let currentPage = 1;
+        let cardsPerPage = 4;
+        let globalConfig = {};
+
+        async function loadConfig() {
+            // 加载全局配置
+            const { data: config, error: configErr } = await supabaseClient
+                .from('config')
+                .select('*')
+                .eq('id', 1)
+                .single();
+            if (configErr) {
+                console.error('读取配置失败', configErr);
+                return null;
+            }
+            globalConfig = config;
+            return config;
+        }
+
+        async function loadBlocks() {
+            // 加载板块（只取未隐藏的，按顺序排序）
+            const { data: blocks, error: blocksErr } = await supabaseClient
+                .from('blocks')
+                .select('*')
+                .eq('hidden', false)
+                .order('sort_order', { ascending: true });
+            if (blocksErr) {
+                console.error('读取板块失败', blocksErr);
+                return [];
+            }
+            return blocks.map(b => ({
+                title: b.title,
+                description: b.description,
+                buttonText: b.button_text,
+                buttonLink: b.button_link
+            }));
+        }
+
+        function renderBoard() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+
+            const start = (currentPage - 1) * cardsPerPage;
+            const end = start + cardsPerPage;
+            const pageCards = allCards.slice(start, end);
+
+            const cardOpacity = globalConfig.card_opacity !== null ? globalConfig.card_opacity / 100 : 1;
+
+            pageCards.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.style.opacity = cardOpacity;
+                cardDiv.innerHTML = `
+                    <h2>${card.title || ''}</h2>
+                    <p>${card.description || ''}</p>
+                    ${card.buttonLink ? `<a href="${card.buttonLink}" class="btn" target="_blank">${card.buttonText || '访问'}</a>` : ''}
+                `;
+                boardDiv.appendChild(cardDiv);
+            });
+
+            const totalPages = Math.ceil(allCards.length / cardsPerPage);
+            document.getElementById('pageInfo').innerText = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            document.getElementById('prevPage').disabled = currentPage <= 1;
+            document.getElementById('nextPage').disabled = currentPage >= totalPages;
+        }
+
+        window.changePage = function(delta) {
+            const totalPages = Math.ceil(allCards.length / cardsPerPage);
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderBoard();
+            }
+        };
+
+        // 复制QQ号码
+        window.copyQQ = function() {
+            navigator.clipboard.writeText('3636270749').then(() => {
+                alert('QQ号已复制到剪贴板');
+            }).catch(() => {
+                alert('复制失败，请手动复制');
+            });
+        };
+
+        function setBackground(config) {
+            // 清除已有背景
+            const oldVideo = document.getElementById('bg-video');
+            if (oldVideo) oldVideo.remove();
+            const oldIframe = document.getElementById('bg-iframe');
+            if (oldIframe) oldIframe.remove();
+            document.body.style.backgroundImage = 'none';
+
+            const videoUrl = config.background_video_url;
+            const imageUrl = config.background_image;
+
+            if (videoUrl) {
+                if (videoUrl.includes('bilibili.com') || videoUrl.includes('bilibili')) {
+                    const iframe = document.createElement('iframe');
+                    iframe.id = 'bg-iframe';
+                    let src = videoUrl;
+                    if (!src.startsWith('http')) {
+                        src = `//player.bilibili.com/player.html?bvid=${src}&autoplay=1&loop=1&muted=1&controls=0&disablekb=1&playsinline=1&high_quality=1`;
+                    } else {
+                        if (!src.includes('autoplay')) src += (src.includes('?') ? '&' : '?') + 'autoplay=1';
+                        if (!src.includes('muted')) src += '&muted=1';
+                        if (!src.includes('loop')) src += '&loop=1';
+                    }
+                    iframe.src = src;
+                    iframe.allow = 'autoplay; fullscreen';
+                    iframe.setAttribute('allowfullscreen', 'true');
+                    document.body.appendChild(iframe);
+                } else {
+                    const video = document.createElement('video');
+                    video.id = 'bg-video';
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    const source = document.createElement('source');
+                    source.src = videoUrl;
+                    source.type = 'video/mp4';
+                    video.appendChild(source);
+                    video.onerror = () => video.remove();
+                    document.body.appendChild(video);
+                }
+            } else if (imageUrl) {
+                document.body.style.backgroundImage = `url('${imageUrl}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundRepeat = 'no-repeat';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+        }
+
+        (async function() {
+            const config = await loadConfig();
+            if (!config) {
+                document.getElementById('board').innerHTML = '<p style="color:red;">配置加载失败，请稍后重试。</p>';
+                return;
+            }
+
+            // 主区域样式
+            const container = document.getElementById('mainContainer');
+            const containerOpacity = (config.container_opacity !== null ? config.container_opacity : 100) / 100;
+            container.style.background = `rgba(255, 255, 255, ${containerOpacity})`;
+            if (config.container_blur) {
+                container.classList.add('blur');
+            } else {
+                container.classList.remove('blur');
+            }
+
+            // 个人信息栏透明度（与卡片相同）
+            const infoBar = document.getElementById('infoBar');
+            const cardOpacity = config.card_opacity !== null ? config.card_opacity / 100 : 1;
+            infoBar.style.opacity = cardOpacity;
+
+            // 加载板块
+            allCards = await loadBlocks();
+            cardsPerPage = config.cards_per_page || 4;
+            renderBoard();
+
+            // 设置背景
+            setBackground(config);
+        })();
+    </script>
+</body>
+</html>
