@@ -21,7 +21,9 @@
         .checkbox-group input[type="checkbox"] { width: auto; margin: 0; }
         .slider-group { display: flex; align-items: center; gap: 10px; }
         .slider-group input[type=range] { flex: 1; }
-        #opacityValue { font-weight: bold; min-width: 3em; text-align: right; }
+        #containerOpacityValue, #opacityValue { font-weight: bold; min-width: 3em; text-align: right; }
+        .row-flex { display: flex; gap: 10px; align-items: center; }
+        .row-flex input[type=number] { width: 80px; }
     </style>
 </head>
 <body>
@@ -37,10 +39,42 @@
         <div id="adminPanel" class="admin-panel" style="display:none;">
             <h2>配置网站</h2>
 
+            <!-- 主区域外观 -->
+            <h3>主区域外观</h3>
+            <div class="field-group">
+                <label>🔲 主区域背景透明度</label>
+                <div class="slider-group">
+                    <input type="range" id="containerOpacity" min="0" max="100" value="100" step="1">
+                    <span id="containerOpacityValue">100%</span>
+                </div>
+                <small>控制白色主背景板的透明度（0%完全透明，100%不透明）</small>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="containerBlur">
+                <label>启用背景模糊效果 (backdrop-filter)</label>
+            </div>
+            <hr>
+
+            <!-- 卡片通用透明度 -->
+            <div class="field-group">
+                <label>🔮 卡片透明度</label>
+                <div class="slider-group">
+                    <input type="range" id="cardOpacity" min="0" max="100" value="100" step="1">
+                    <span id="opacityValue">100%</span>
+                </div>
+                <small>每个卡片的透明度（0%完全透明，100%不透明）</small>
+            </div>
+            <hr>
+
             <!-- 板块1 -->
             <h3>板块1</h3>
-            <div class="field-group">
-                <label>标题</label><input type="text" id="b1Title">
+            <div class="row-flex">
+                <div style="flex:1">
+                    <label>标题</label><input type="text" id="b1Title">
+                </div>
+                <div style="width:100px">
+                    <label>顺序</label><input type="number" id="b1Order" value="0" min="0">
+                </div>
             </div>
             <div class="field-group">
                 <label>描述</label><textarea id="b1Desc" rows="2"></textarea>
@@ -59,82 +93,50 @@
 
             <!-- 板块2 -->
             <h3>板块2</h3>
-            <div class="field-group">
-                <label>标题</label><input type="text" id="b2Title">
+            <div class="row-flex">
+                <div style="flex:1"><label>标题</label><input type="text" id="b2Title"></div>
+                <div style="width:100px"><label>顺序</label><input type="number" id="b2Order" value="0" min="0"></div>
             </div>
-            <div class="field-group">
-                <label>描述</label><textarea id="b2Desc" rows="2"></textarea>
-            </div>
-            <div class="field-group">
-                <label>按钮文字</label><input type="text" id="b2BtnText">
-            </div>
-            <div class="field-group">
-                <label>链接地址</label><input type="text" id="b2BtnLink">
-            </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="b2Hidden">
-                <label>隐藏此板块</label>
-            </div>
+            <div class="field-group"><label>描述</label><textarea id="b2Desc" rows="2"></textarea></div>
+            <div class="field-group"><label>按钮文字</label><input type="text" id="b2BtnText"></div>
+            <div class="field-group"><label>链接地址</label><input type="text" id="b2BtnLink"></div>
+            <div class="checkbox-group"><input type="checkbox" id="b2Hidden"><label>隐藏此板块</label></div>
             <hr>
 
             <!-- 板块3 -->
             <h3>板块3</h3>
-            <div class="field-group">
-                <label>标题</label><input type="text" id="b3Title">
+            <div class="row-flex">
+                <div style="flex:1"><label>标题</label><input type="text" id="b3Title"></div>
+                <div style="width:100px"><label>顺序</label><input type="number" id="b3Order" value="0" min="0"></div>
             </div>
-            <div class="field-group">
-                <label>描述</label><textarea id="b3Desc" rows="2"></textarea>
-            </div>
-            <div class="field-group">
-                <label>按钮文字</label><input type="text" id="b3BtnText">
-            </div>
-            <div class="field-group">
-                <label>链接地址</label><input type="text" id="b3BtnLink">
-            </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="b3Hidden">
-                <label>隐藏此板块</label>
-            </div>
+            <div class="field-group"><label>描述</label><textarea id="b3Desc" rows="2"></textarea></div>
+            <div class="field-group"><label>按钮文字</label><input type="text" id="b3BtnText"></div>
+            <div class="field-group"><label>链接地址</label><input type="text" id="b3BtnLink"></div>
+            <div class="checkbox-group"><input type="checkbox" id="b3Hidden"><label>隐藏此板块</label></div>
             <hr>
 
             <!-- 板块4 -->
             <h3>板块4</h3>
-            <div class="field-group">
-                <label>标题</label><input type="text" id="b4Title">
+            <div class="row-flex">
+                <div style="flex:1"><label>标题</label><input type="text" id="b4Title"></div>
+                <div style="width:100px"><label>顺序</label><input type="number" id="b4Order" value="0" min="0"></div>
             </div>
-            <div class="field-group">
-                <label>描述</label><textarea id="b4Desc" rows="2"></textarea>
-            </div>
-            <div class="field-group">
-                <label>按钮文字</label><input type="text" id="b4BtnText">
-            </div>
-            <div class="field-group">
-                <label>链接地址</label><input type="text" id="b4BtnLink">
-            </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="b4Hidden">
-                <label>隐藏此板块</label>
-            </div>
+            <div class="field-group"><label>描述</label><textarea id="b4Desc" rows="2"></textarea></div>
+            <div class="field-group"><label>按钮文字</label><input type="text" id="b4BtnText"></div>
+            <div class="field-group"><label>链接地址</label><input type="text" id="b4BtnLink"></div>
+            <div class="checkbox-group"><input type="checkbox" id="b4Hidden"><label>隐藏此板块</label></div>
             <hr>
 
             <!-- 板块5 -->
             <h3>板块5</h3>
-            <div class="field-group">
-                <label>标题</label><input type="text" id="b5Title">
+            <div class="row-flex">
+                <div style="flex:1"><label>标题</label><input type="text" id="b5Title"></div>
+                <div style="width:100px"><label>顺序</label><input type="number" id="b5Order" value="0" min="0"></div>
             </div>
-            <div class="field-group">
-                <label>描述</label><textarea id="b5Desc" rows="2"></textarea>
-            </div>
-            <div class="field-group">
-                <label>按钮文字</label><input type="text" id="b5BtnText">
-            </div>
-            <div class="field-group">
-                <label>链接地址</label><input type="text" id="b5BtnLink">
-            </div>
-            <div class="checkbox-group">
-                <input type="checkbox" id="b5Hidden">
-                <label>隐藏此板块</label>
-            </div>
+            <div class="field-group"><label>描述</label><textarea id="b5Desc" rows="2"></textarea></div>
+            <div class="field-group"><label>按钮文字</label><input type="text" id="b5BtnText"></div>
+            <div class="field-group"><label>链接地址</label><input type="text" id="b5BtnLink"></div>
+            <div class="checkbox-group"><input type="checkbox" id="b5Hidden"><label>隐藏此板块</label></div>
             <hr>
 
             <!-- 背景视频 -->
@@ -145,14 +147,11 @@
             </div>
             <hr>
 
-            <!-- 卡片透明度控制 -->
+            <!-- 分页设置 -->
             <div class="field-group">
-                <label>🔮 卡片透明度</label>
-                <div class="slider-group">
-                    <input type="range" id="cardOpacity" min="0" max="100" value="100" step="1">
-                    <span id="opacityValue">100%</span>
-                </div>
-                <small>设置卡片的透明度（0%完全透明，100%不透明）</small>
+                <label>📄 每页显示卡片数</label>
+                <input type="number" id="cardsPerPage" value="4" min="1" max="10">
+                <small>前台翻页时每页显示的卡片数量</small>
             </div>
             <hr>
 
@@ -174,10 +173,15 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // 实时显示滑块值
-        const opacitySlider = document.getElementById('cardOpacity');
-        const opacitySpan = document.getElementById('opacityValue');
-        opacitySlider.addEventListener('input', function() {
-            opacitySpan.innerText = this.value + '%';
+        const containerSlider = document.getElementById('containerOpacity');
+        const containerSpan = document.getElementById('containerOpacityValue');
+        containerSlider.addEventListener('input', function() {
+            containerSpan.innerText = this.value + '%';
+        });
+        const cardSlider = document.getElementById('cardOpacity');
+        const cardSpan = document.getElementById('opacityValue');
+        cardSlider.addEventListener('input', function() {
+            cardSpan.innerText = this.value + '%';
         });
 
         async function loadConfigToForm() {
@@ -191,42 +195,60 @@
                 return;
             }
             if (data) {
+                // 主区域设置
+                document.getElementById('containerOpacity').value = data.container_opacity !== null ? data.container_opacity : 100;
+                containerSpan.innerText = (data.container_opacity || 100) + '%';
+                document.getElementById('containerBlur').checked = data.container_blur || false;
+
+                // 卡片透明度
+                document.getElementById('cardOpacity').value = data.card_opacity !== null ? data.card_opacity : 100;
+                cardSpan.innerText = (data.card_opacity || 100) + '%';
+
+                // 分页每页数量
+                document.getElementById('cardsPerPage').value = data.cards_per_page || 4;
+
                 // 板块1
                 document.getElementById('b1Title').value = data.board1_title || '';
                 document.getElementById('b1Desc').value = data.board1_description || '';
                 document.getElementById('b1BtnText').value = data.board1_button_text || '';
                 document.getElementById('b1BtnLink').value = data.board1_button_link || '';
                 document.getElementById('b1Hidden').checked = data.board1_hidden || false;
+                document.getElementById('b1Order').value = data.board1_order || 0;
+
                 // 板块2
                 document.getElementById('b2Title').value = data.board2_title || '';
                 document.getElementById('b2Desc').value = data.board2_description || '';
                 document.getElementById('b2BtnText').value = data.board2_button_text || '';
                 document.getElementById('b2BtnLink').value = data.board2_button_link || '';
                 document.getElementById('b2Hidden').checked = data.board2_hidden || false;
+                document.getElementById('b2Order').value = data.board2_order || 0;
+
                 // 板块3
                 document.getElementById('b3Title').value = data.board3_title || '';
                 document.getElementById('b3Desc').value = data.board3_description || '';
                 document.getElementById('b3BtnText').value = data.board3_button_text || '';
                 document.getElementById('b3BtnLink').value = data.board3_button_link || '';
                 document.getElementById('b3Hidden').checked = data.board3_hidden || false;
+                document.getElementById('b3Order').value = data.board3_order || 0;
+
                 // 板块4
                 document.getElementById('b4Title').value = data.board4_title || '';
                 document.getElementById('b4Desc').value = data.board4_description || '';
                 document.getElementById('b4BtnText').value = data.board4_button_text || '';
                 document.getElementById('b4BtnLink').value = data.board4_button_link || '';
                 document.getElementById('b4Hidden').checked = data.board4_hidden || false;
+                document.getElementById('b4Order').value = data.board4_order || 0;
+
                 // 板块5
                 document.getElementById('b5Title').value = data.board5_title || '';
                 document.getElementById('b5Desc').value = data.board5_description || '';
                 document.getElementById('b5BtnText').value = data.board5_button_text || '';
                 document.getElementById('b5BtnLink').value = data.board5_button_link || '';
                 document.getElementById('b5Hidden').checked = data.board5_hidden || false;
+                document.getElementById('b5Order').value = data.board5_order || 0;
+
                 // 背景视频
                 document.getElementById('bgVideoUrl').value = data.background_video_url || '';
-                // 卡片透明度
-                const opacity = data.card_opacity !== null ? data.card_opacity : 100;
-                document.getElementById('cardOpacity').value = opacity;
-                document.getElementById('opacityValue').innerText = opacity + '%';
             }
         }
 
@@ -258,33 +280,54 @@
 
         async function saveConfig() {
             const updates = {
+                // 主区域
+                container_opacity: parseInt(document.getElementById('containerOpacity').value),
+                container_blur: document.getElementById('containerBlur').checked,
+                card_opacity: parseInt(document.getElementById('cardOpacity').value),
+                cards_per_page: parseInt(document.getElementById('cardsPerPage').value),
+
+                // 板块1
                 board1_title: document.getElementById('b1Title').value,
                 board1_description: document.getElementById('b1Desc').value,
                 board1_button_text: document.getElementById('b1BtnText').value,
                 board1_button_link: document.getElementById('b1BtnLink').value,
                 board1_hidden: document.getElementById('b1Hidden').checked,
+                board1_order: parseInt(document.getElementById('b1Order').value) || 0,
+
+                // 板块2
                 board2_title: document.getElementById('b2Title').value,
                 board2_description: document.getElementById('b2Desc').value,
                 board2_button_text: document.getElementById('b2BtnText').value,
                 board2_button_link: document.getElementById('b2BtnLink').value,
                 board2_hidden: document.getElementById('b2Hidden').checked,
+                board2_order: parseInt(document.getElementById('b2Order').value) || 0,
+
+                // 板块3
                 board3_title: document.getElementById('b3Title').value,
                 board3_description: document.getElementById('b3Desc').value,
                 board3_button_text: document.getElementById('b3BtnText').value,
                 board3_button_link: document.getElementById('b3BtnLink').value,
                 board3_hidden: document.getElementById('b3Hidden').checked,
+                board3_order: parseInt(document.getElementById('b3Order').value) || 0,
+
+                // 板块4
                 board4_title: document.getElementById('b4Title').value,
                 board4_description: document.getElementById('b4Desc').value,
                 board4_button_text: document.getElementById('b4BtnText').value,
                 board4_button_link: document.getElementById('b4BtnLink').value,
                 board4_hidden: document.getElementById('b4Hidden').checked,
+                board4_order: parseInt(document.getElementById('b4Order').value) || 0,
+
+                // 板块5
                 board5_title: document.getElementById('b5Title').value,
                 board5_description: document.getElementById('b5Desc').value,
                 board5_button_text: document.getElementById('b5BtnText').value,
                 board5_button_link: document.getElementById('b5BtnLink').value,
                 board5_hidden: document.getElementById('b5Hidden').checked,
-                background_video_url: document.getElementById('bgVideoUrl').value,
-                card_opacity: parseInt(document.getElementById('cardOpacity').value)
+                board5_order: parseInt(document.getElementById('b5Order').value) || 0,
+
+                // 背景视频
+                background_video_url: document.getElementById('bgVideoUrl').value
             };
 
             const newPass = document.getElementById('newPassword').value;
