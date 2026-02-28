@@ -20,7 +20,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- 登录界面 -->
         <div id="loginBox" class="login-box">
             <h2>管理员登录</h2>
             <input type="text" id="username" placeholder="用户名" value="admin">
@@ -29,9 +28,9 @@
             <p id="loginError" class="error"></p>
         </div>
 
-        <!-- 管理面板（默认隐藏） -->
         <div id="adminPanel" class="admin-panel" style="display:none;">
             <h2>配置网站</h2>
+            <!-- ⚠️ 以下所有字段的 ID 和对应的数据字段名请按实际修改 -->
             <div class="field-group">
                 <label>板块1 标题</label>
                 <input type="text" id="b1Title">
@@ -84,7 +83,7 @@
 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 加载当前配置到表单
+        // 加载配置到表单
         async function loadConfigToForm() {
             const { data, error } = await supabase
                 .from('config')
@@ -96,19 +95,18 @@
                 return;
             }
             if (data) {
-                // 注意：字段名请按实际修改
+                // ⚠️ 请根据你的实际字段名修改下面的赋值
                 document.getElementById('b1Title').value = data.board1_title || '';
-                document.getElementById('b1Desc').value = data.board1_description || '';
-                document.getElementById('b1BtnText').value = data.board1_button_text || '';
+                document.getElementById('b1Desc').value = data.board1_descrj || '';      // 如果字段名是 board1_description 就改
+                document.getElementById('b1BtnText').value = data.board1_button || '';   // 如果字段名是 board1_button_text 就改
                 document.getElementById('b1BtnLink').value = data.board1_button_link || '';
                 document.getElementById('b2Title').value = data.board2_title || '';
-                document.getElementById('b2Desc').value = data.board2_description || '';
-                document.getElementById('b2BtnText').value = data.board2_button_text || '';
+                document.getElementById('b2Desc').value = data.board2_descrj || '';      // 如果字段名是 board2_description 就改
+                document.getElementById('b2BtnText').value = data.board2_buttor || '';   // 如果字段名是 board2_button_text 就改
                 document.getElementById('b2BtnLink').value = data.board2_button_link || '';
             }
         }
 
-        // 登录验证
         async function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -135,16 +133,16 @@
             }
         }
 
-        // 保存配置
         async function saveConfig() {
+            // ⚠️ 请根据你的实际字段名修改下面的 updates 对象
             const updates = {
                 board1_title: document.getElementById('b1Title').value,
-                board1_description: document.getElementById('b1Desc').value,
-                board1_button_text: document.getElementById('b1BtnText').value,
+                board1_descrj: document.getElementById('b1Desc').value,          // 如果字段名是 board1_description 就改
+                board1_button: document.getElementById('b1BtnText').value,      // 如果字段名是 board1_button_text 就改
                 board1_button_link: document.getElementById('b1BtnLink').value,
                 board2_title: document.getElementById('b2Title').value,
-                board2_description: document.getElementById('b2Desc').value,
-                board2_button_text: document.getElementById('b2BtnText').value,
+                board2_descrj: document.getElementById('b2Desc').value,          // 如果字段名是 board2_description 就改
+                board2_buttor: document.getElementById('b2BtnText').value,      // 如果字段名是 board2_button_text 就改
                 board2_button_link: document.getElementById('b2BtnLink').value
             };
 
