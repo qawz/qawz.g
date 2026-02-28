@@ -19,9 +19,12 @@
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             padding: 30px;
-            backdrop-filter: blur(10px);
             position: relative;
             z-index: 1;
+            transition: background 0.3s, backdrop-filter 0.3s;
+        }
+        .container.blur {
+            backdrop-filter: blur(10px);
         }
         h1 { color: #333; }
         .admin-link { text-align: right; margin-bottom: 20px; }
@@ -55,6 +58,32 @@
         .btn:hover { background: #764ba2; }
         footer { margin-top: 40px; text-align: center; color: #aaa; }
 
+        /* 分页控件 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        .pagination button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination span {
+            font-size: 16px;
+            color: #333;
+        }
+
         #bg-video, #bg-iframe {
             position: fixed;
             top: 0;
@@ -76,12 +105,17 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="mainContainer">
         <div class="admin-link">
             <a href="admin.html">⚙️ 管理后台</a>
         </div>
         <h1>qawz 的小站</h1>
         <div class="board" id="board"></div>
+        <div class="pagination" id="pagination">
+            <button id="prevPage" onclick="changePage(-1)">上一页</button>
+            <span id="pageInfo">第 1 页 / 共 1 页</span>
+            <button id="nextPage" onclick="changePage(1)">下一页</button>
+        </div>
         <footer>Hosted on GitHub Pages · 2026</footer>
     </div>
 
@@ -90,6 +124,11 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 全局变量
+        let allCards = [];          // 所有未隐藏卡片的数组，包含数据
+        let currentPage = 1;
+        let cardsPerPage = 4;       // 默认，会从数据库加载
 
         async function loadConfig() {
             const { data, error } = await supabaseClient
@@ -104,71 +143,103 @@
             return data;
         }
 
-        function renderBoard(config) {
-            const boardDiv = document.getElementById('board');
-            boardDiv.innerHTML = '';
-
-            // 获取透明度值（0-100），转换为0-1
-            const opacity = (config.card_opacity !== null ? config.card_opacity : 100) / 100;
-
-            function createCard(title, desc, btnText, btnLink) {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.style.opacity = opacity;  // 应用透明度
-                card.innerHTML = `
-                    <h2>${title || ''}</h2>
-                    <p>${desc || ''}</p>
-                    ${btnLink ? `<a href="${btnLink}" class="btn" target="_blank">${btnText || '访问'}</a>` : ''}
-                `;
-                return card;
-            }
-
+        // 构建卡片数组（只包含未隐藏的板块）
+        function buildCardsArray(config) {
+            const cards = [];
             // 板块1
             if (!config.board1_hidden) {
-                boardDiv.appendChild(createCard(
-                    config.board1_title,
-                    config.board1_description,
-                    config.board1_button_text,
-                    config.board1_button_link
-                ));
+                cards.push({
+                    title: config.board1_title,
+                    description: config.board1_description,
+                    buttonText: config.board1_button_text,
+                    buttonLink: config.board1_button_link,
+                    order: config.board1_order || 0
+                });
             }
             // 板块2
             if (!config.board2_hidden) {
-                boardDiv.appendChild(createCard(
-                    config.board2_title,
-                    config.board2_description,
-                    config.board2_button_text,
-                    config.board2_button_link
-                ));
+                cards.push({
+                    title: config.board2_title,
+                    description: config.board2_description,
+                    buttonText: config.board2_button_text,
+                    buttonLink: config.board2_button_link,
+                    order: config.board2_order || 0
+                });
             }
             // 板块3
             if (!config.board3_hidden) {
-                boardDiv.appendChild(createCard(
-                    config.board3_title,
-                    config.board3_description,
-                    config.board3_button_text,
-                    config.board3_button_link
-                ));
+                cards.push({
+                    title: config.board3_title,
+                    description: config.board3_description,
+                    buttonText: config.board3_button_text,
+                    buttonLink: config.board3_button_link,
+                    order: config.board3_order || 0
+                });
             }
             // 板块4
             if (!config.board4_hidden) {
-                boardDiv.appendChild(createCard(
-                    config.board4_title,
-                    config.board4_description,
-                    config.board4_button_text,
-                    config.board4_button_link
-                ));
+                cards.push({
+                    title: config.board4_title,
+                    description: config.board4_description,
+                    buttonText: config.board4_button_text,
+                    buttonLink: config.board4_button_link,
+                    order: config.board4_order || 0
+                });
             }
             // 板块5
             if (!config.board5_hidden) {
-                boardDiv.appendChild(createCard(
-                    config.board5_title,
-                    config.board5_description,
-                    config.board5_button_text,
-                    config.board5_button_link
-                ));
+                cards.push({
+                    title: config.board5_title,
+                    description: config.board5_description,
+                    buttonText: config.board5_button_text,
+                    buttonLink: config.board5_button_link,
+                    order: config.board5_order || 0
+                });
             }
+            // 按 order 升序排序
+            cards.sort((a, b) => a.order - b.order);
+            return cards;
         }
+
+        // 渲染当前页的卡片
+        function renderBoard() {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+
+            const start = (currentPage - 1) * cardsPerPage;
+            const end = start + cardsPerPage;
+            const pageCards = allCards.slice(start, end);
+
+            const cardOpacity = window.globalConfig ? (window.globalConfig.card_opacity || 100) / 100 : 1;
+
+            pageCards.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.style.opacity = cardOpacity;
+                cardDiv.innerHTML = `
+                    <h2>${card.title || ''}</h2>
+                    <p>${card.description || ''}</p>
+                    ${card.buttonLink ? `<a href="${card.buttonLink}" class="btn" target="_blank">${card.buttonText || '访问'}</a>` : ''}
+                `;
+                boardDiv.appendChild(cardDiv);
+            });
+
+            // 更新分页信息
+            const totalPages = Math.ceil(allCards.length / cardsPerPage);
+            document.getElementById('pageInfo').innerText = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            document.getElementById('prevPage').disabled = currentPage <= 1;
+            document.getElementById('nextPage').disabled = currentPage >= totalPages;
+        }
+
+        // 翻页函数（全局）
+        window.changePage = function(delta) {
+            const totalPages = Math.ceil(allCards.length / cardsPerPage);
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderBoard();
+            }
+        };
 
         function setBackgroundVideo(videoUrl) {
             const oldVideo = document.getElementById('bg-video');
@@ -212,7 +283,24 @@
         (async function() {
             const config = await loadConfig();
             if (config) {
-                renderBoard(config);
+                window.globalConfig = config; // 存储以供其他函数使用
+
+                // 设置主区域样式
+                const container = document.getElementById('mainContainer');
+                const containerOpacity = (config.container_opacity !== null ? config.container_opacity : 100) / 100;
+                container.style.background = `rgba(255, 255, 255, ${containerOpacity})`;
+                if (config.container_blur) {
+                    container.classList.add('blur');
+                } else {
+                    container.classList.remove('blur');
+                }
+
+                // 设置卡片分页
+                cardsPerPage = config.cards_per_page || 4;
+                allCards = buildCardsArray(config);
+                renderBoard();
+
+                // 背景视频
                 setBackgroundVideo(config.background_video_url);
             } else {
                 document.getElementById('board').innerHTML = '<p style="color:red;">配置加载失败，请稍后重试。</p>';
