@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>qawz 的小站</title>
+    <!-- 引入 Supabase 库（只需一次） -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -31,15 +32,16 @@
     </div>
 
     <script>
-        // ===== 你的 Supabase 配置（已填写） =====
+        // ===== 你的 Supabase 配置 =====
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-        // =======================================
+        // ==============================
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // 创建 Supabase 客户端（只声明一次）
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function loadConfig() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('config')
                 .select('*')
                 .eq('id', 1)
@@ -55,14 +57,13 @@
             const boardDiv = document.getElementById('board');
             boardDiv.innerHTML = '';
 
-            // ⚠️ 请根据你的实际字段名修改下面的字段名！
             // 板块1
             const card1 = document.createElement('div');
             card1.className = 'card';
             card1.innerHTML = `
                 <h2>${config.board1_title}</h2>
-                <p>${config.board1_descrj}</p>          <!-- 这里如果字段名是 board1_descrj 就保留，如果是 board1_description 就改回去 -->
-                ${config.board1_button_link ? `<a href="${config.board1_button_link}" class="btn" target="_blank">${config.board1_button}</a>` : ''}  <!-- 如果按钮文字字段是 board1_button 就保留，如果是 board1_button_text 就改回去 -->
+                <p>${config.board1_description}</p>
+                ${config.board1_button_link ? `<a href="${config.board1_button_link}" class="btn" target="_blank">${config.board1_button_text}</a>` : ''}
             `;
             boardDiv.appendChild(card1);
 
@@ -71,8 +72,8 @@
             card2.className = 'card';
             card2.innerHTML = `
                 <h2>${config.board2_title}</h2>
-                <p>${config.board2_descrj || ''}</p>    <!-- 同样检查字段名 -->
-                ${config.board2_button_link ? `<a href="${config.board2_button_link}" class="btn" target="_blank">${config.board2_buttor}</a>` : ''}  <!-- 检查按钮文字字段 -->
+                <p>${config.board2_description}</p>
+                ${config.board2_button_link ? `<a href="${config.board2_button_link}" class="btn" target="_blank">${config.board2_button_text}</a>` : ''}
             `;
             boardDiv.appendChild(card2);
         }
