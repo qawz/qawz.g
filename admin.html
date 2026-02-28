@@ -19,6 +19,9 @@
         small { color: #666; font-size: 0.85em; }
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
         .checkbox-group input[type="checkbox"] { width: auto; margin: 0; }
+        .slider-group { display: flex; align-items: center; gap: 10px; }
+        .slider-group input[type=range] { flex: 1; }
+        #opacityValue { font-weight: bold; min-width: 3em; text-align: right; }
     </style>
 </head>
 <body>
@@ -142,6 +145,17 @@
             </div>
             <hr>
 
+            <!-- 卡片透明度控制 -->
+            <div class="field-group">
+                <label>🔮 卡片透明度</label>
+                <div class="slider-group">
+                    <input type="range" id="cardOpacity" min="0" max="100" value="100" step="1">
+                    <span id="opacityValue">100%</span>
+                </div>
+                <small>设置卡片的透明度（0%完全透明，100%不透明）</small>
+            </div>
+            <hr>
+
             <!-- 修改密码 -->
             <div class="field-group">
                 <label>修改密码（留空则不修改）</label>
@@ -158,6 +172,13 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 实时显示滑块值
+        const opacitySlider = document.getElementById('cardOpacity');
+        const opacitySpan = document.getElementById('opacityValue');
+        opacitySlider.addEventListener('input', function() {
+            opacitySpan.innerText = this.value + '%';
+        });
 
         async function loadConfigToForm() {
             const { data, error } = await supabaseClient
@@ -202,6 +223,10 @@
                 document.getElementById('b5Hidden').checked = data.board5_hidden || false;
                 // 背景视频
                 document.getElementById('bgVideoUrl').value = data.background_video_url || '';
+                // 卡片透明度
+                const opacity = data.card_opacity !== null ? data.card_opacity : 100;
+                document.getElementById('cardOpacity').value = opacity;
+                document.getElementById('opacityValue').innerText = opacity + '%';
             }
         }
 
@@ -258,7 +283,8 @@
                 board5_button_text: document.getElementById('b5BtnText').value,
                 board5_button_link: document.getElementById('b5BtnLink').value,
                 board5_hidden: document.getElementById('b5Hidden').checked,
-                background_video_url: document.getElementById('bgVideoUrl').value
+                background_video_url: document.getElementById('bgVideoUrl').value,
+                card_opacity: parseInt(document.getElementById('cardOpacity').value)
             };
 
             const newPass = document.getElementById('newPassword').value;
