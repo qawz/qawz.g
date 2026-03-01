@@ -157,6 +157,20 @@
             width: 40px;
             text-align: center;
         }
+        .type-badge-add {
+            background: #d4edda;
+            color: #155724;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .type-badge-subtract {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -178,21 +192,30 @@
 
         <!-- 标签页 -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('rules')">📋 加分规则</button>
+            <button class="tab-btn active" onclick="switchTab('rules')">📋 规则管理</button>
             <button class="tab-btn" onclick="switchTab('students')">👥 学生管理</button>
             <button class="tab-btn" onclick="switchTab('applications')">📬 申请审核</button>
             <button class="tab-btn" onclick="switchTab('rank')">🏆 积分排名</button>
         </div>
 
-        <!-- 规则管理 -->
+        <!-- 规则管理（含扣分规则） -->
         <div id="rulesPanel" class="panel active">
             <div class="card">
                 <div class="card-header">
-                    <h2>加分规则管理</h2>
+                    <h2>加分/扣分规则管理</h2>
                     <button class="btn btn-primary" id="addRuleBtn">➕ 新建规则</button>
                 </div>
                 <table>
-                    <thead><tr><th>名称</th><th>描述</th><th>分值</th><th>状态</th><th>操作</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>类型</th>
+                            <th>名称</th>
+                            <th>描述</th>
+                            <th>分值</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
                     <tbody id="rulesList"></tbody>
                 </table>
             </div>
@@ -230,7 +253,17 @@
             <div class="card">
                 <h2>待审核申请</h2>
                 <table>
-                    <thead><tr><th>学生</th><th>项目</th><th>分值</th><th>理由</th><th>申请时间</th><th>操作</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>学生</th>
+                            <th>项目</th>
+                            <th>类型</th>
+                            <th>分值</th>
+                            <th>理由</th>
+                            <th>申请时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
                     <tbody id="pendingList"></tbody>
                 </table>
             </div>
@@ -240,7 +273,18 @@
                     <input type="text" id="historySearch" class="search-box" placeholder="搜索学生姓名或学号">
                 </div>
                 <table>
-                    <thead><tr><th>学生</th><th>项目</th><th>分值</th><th>理由</th><th>状态</th><th>审核时间</th><th>操作</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>学生</th>
+                            <th>项目</th>
+                            <th>类型</th>
+                            <th>分值</th>
+                            <th>理由</th>
+                            <th>状态</th>
+                            <th>审核时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
                     <tbody id="historyList"></tbody>
                 </table>
             </div>
@@ -258,14 +302,19 @@
         </div>
     </div>
 
-    <!-- 规则编辑模态框 -->
+    <!-- 规则编辑模态框（增加类型选择） -->
     <div id="ruleModal" class="modal">
         <div class="modal-content">
             <h3 id="ruleModalTitle">新建规则</h3>
             <input type="hidden" id="ruleId">
+            <label>规则类型</label>
+            <select id="ruleType">
+                <option value="add">➕ 加分规则</option>
+                <option value="subtract">➖ 扣分规则</option>
+            </select>
             <label>规则名称</label><input type="text" id="ruleName">
             <label>描述</label><textarea id="ruleDesc" rows="2"></textarea>
-            <label>默认分值</label><input type="number" id="rulePoints">
+            <label>分值</label><input type="number" id="rulePoints" value="5" min="1">
             <div style="display:flex; gap:10px; justify-content:flex-end;">
                 <button class="btn btn-success" id="saveRuleBtn">保存</button>
                 <button class="btn btn-danger" id="closeRuleModalBtn">取消</button>
@@ -354,24 +403,28 @@
             }
         }
 
-        // ---------- 规则管理 ----------
+        // ---------- 规则管理（支持类型）----------
         async function loadRules() {
             console.log('加载规则列表');
             try {
                 const { data: rules, error } = await supabaseClient
                     .from('point_rules')
                     .select('*')
+                    .order('type')
                     .order('id');
                 if (error) throw error;
                 const tbody = document.getElementById('rulesList');
                 tbody.innerHTML = '';
                 if (!rules || rules.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无规则</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无规则</td></tr>';
                     return;
                 }
                 rules.forEach(rule => {
                     const tr = document.createElement('tr');
+                    const typeClass = rule.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
+                    const typeText = rule.type === 'add' ? '加分' : '扣分';
                     tr.innerHTML = `
+                        <td><span class="${typeClass}">${typeText}</span></td>
                         <td>${rule.name}</td>
                         <td>${rule.description || '-'}</td>
                         <td>${rule.points}</td>
@@ -401,6 +454,7 @@
                 if (error) throw error;
                 document.getElementById('ruleModalTitle').innerText = '编辑规则';
                 document.getElementById('ruleId').value = rule.id;
+                document.getElementById('ruleType').value = rule.type;
                 document.getElementById('ruleName').value = rule.name;
                 document.getElementById('ruleDesc').value = rule.description || '';
                 document.getElementById('rulePoints').value = rule.points;
@@ -450,6 +504,7 @@
 
         window.saveRule = async function() {
             const id = document.getElementById('ruleId').value;
+            const type = document.getElementById('ruleType').value;
             const name = document.getElementById('ruleName').value.trim();
             const desc = document.getElementById('ruleDesc').value.trim();
             const points = parseInt(document.getElementById('rulePoints').value);
@@ -457,7 +512,7 @@
                 alert('请填写名称和分值');
                 return;
             }
-            const data = { name, description: desc, points, enabled: true };
+            const data = { type, name, description: desc, points, enabled: true };
             try {
                 if (id) {
                     const { error } = await supabaseClient
@@ -483,7 +538,7 @@
             document.getElementById('ruleModal').style.display = 'none';
         };
 
-        // ---------- 学生管理（带多选）----------
+        // ---------- 学生管理 ----------
         async function loadStudents() {
             console.log('加载学生列表');
             try {
@@ -512,7 +567,6 @@
             }
         }
 
-        // 全选/取消全选
         window.toggleSelectAll = function() {
             const checkboxes = document.querySelectorAll('.student-checkbox');
             const selectAll = document.getElementById('selectAllCheckbox');
@@ -521,14 +575,12 @@
             if (selectAll) selectAll.checked = !allChecked;
         };
 
-        // 全选复选框变化
         window.toggleAllCheckboxes = function() {
             const selectAll = document.getElementById('selectAllCheckbox');
             const checkboxes = document.querySelectorAll('.student-checkbox');
             checkboxes.forEach(cb => cb.checked = selectAll.checked);
         };
 
-        // 积分清零（选中学生）
         window.clearSelectedPoints = async function() {
             const checkboxes = document.querySelectorAll('.student-checkbox:checked');
             if (checkboxes.length === 0) {
@@ -539,7 +591,6 @@
 
             const studentIds = Array.from(checkboxes).map(cb => cb.value);
             try {
-                // 逐个更新积分为 0
                 for (const id of studentIds) {
                     const { error } = await supabaseClient
                         .from('students')
@@ -548,8 +599,8 @@
                     if (error) throw error;
                 }
                 alert('积分清零成功');
-                loadStudents();      // 刷新学生列表
-                loadRank();           // 刷新积分排名
+                loadStudents();
+                loadRank();
             } catch (err) {
                 console.error('积分清零失败:', err);
                 alert('积分清零失败：' + err.message);
@@ -580,14 +631,12 @@
                 return;
             }
             try {
-                // 更新基本信息
                 const { error: updateError } = await supabaseClient
                     .from('students')
                     .update({ name, class: className })
                     .eq('id', id);
                 if (updateError) throw updateError;
 
-                // 调整积分
                 if (pointsAdjust !== 0) {
                     const { error: rpcError } = await supabaseClient
                         .rpc('increment_student_points', { student_id: id, points: pointsAdjust });
@@ -603,14 +652,14 @@
             }
         };
 
-        // ---------- 申请审核 ----------
+        // ---------- 申请审核（支持扣分）----------
         async function loadApplications() {
             console.log('加载申请列表');
             try {
                 // 待审核
                 const { data: pending, error: pendingError } = await supabaseClient
                     .from('applications')
-                    .select('*, students(name, student_id), point_rules(name, points)')
+                    .select('*, students(name, student_id), point_rules(name, points, type)')
                     .eq('status', 'pending')
                     .order('created_at');
                 if (pendingError) throw pendingError;
@@ -619,9 +668,12 @@
                 if (pending && pending.length > 0) {
                     pending.forEach(app => {
                         const tr = document.createElement('tr');
+                        const typeClass = app.point_rules.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
+                        const typeText = app.point_rules.type === 'add' ? '加分' : '扣分';
                         tr.innerHTML = `
                             <td>${app.students.name} (${app.students.student_id})</td>
                             <td>${app.point_rules.name}</td>
+                            <td><span class="${typeClass}">${typeText}</span></td>
                             <td>${app.custom_points || app.point_rules.points}</td>
                             <td>${app.reason || ''}</td>
                             <td>${new Date(app.created_at).toLocaleString()}</td>
@@ -633,13 +685,13 @@
                         pendingTbody.appendChild(tr);
                     });
                 } else {
-                    pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核申请</td></tr>';
+                    pendingTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无待审核申请</td></tr>';
                 }
 
                 // 已审核
                 const { data: history, error: historyError } = await supabaseClient
                     .from('applications')
-                    .select('*, students(name, student_id), point_rules(name, points)')
+                    .select('*, students(name, student_id), point_rules(name, points, type)')
                     .neq('status', 'pending')
                     .order('reviewed_at', { ascending: false });
                 if (historyError) throw historyError;
@@ -650,10 +702,13 @@
                         const tr = document.createElement('tr');
                         const statusClass = `status-${app.status}`;
                         const statusText = app.status === 'approved' ? '已通过' : '已拒绝';
+                        const typeClass = app.point_rules?.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
+                        const typeText = app.point_rules?.type === 'add' ? '加分' : '扣分';
                         tr.innerHTML = `
                             <td>${app.students.name} (${app.students.student_id})</td>
-                            <td>${app.point_rules.name}</td>
-                            <td>${app.custom_points || app.point_rules.points}</td>
+                            <td>${app.point_rules?.name || '已删除规则'}</td>
+                            <td><span class="${typeClass}">${typeText}</span></td>
+                            <td>${app.custom_points || app.point_rules?.points || ''}</td>
                             <td>${app.reason || ''}</td>
                             <td><span class="${statusClass}">${statusText}</span></td>
                             <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
@@ -664,7 +719,7 @@
                         historyTbody.appendChild(tr);
                     });
                 } else {
-                    historyTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无已审核记录</td></tr>';
+                    historyTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无已审核记录</td></tr>';
                 }
             } catch (err) {
                 console.error('加载申请失败:', err);
@@ -684,7 +739,7 @@
                 if (status === 'approved') {
                     const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
-                        .select('student_id, custom_points, point_rules(points)')
+                        .select('student_id, custom_points, point_rules(points, type)')
                         .eq('id', id)
                         .single();
                     if (fetchError) throw fetchError;
@@ -692,10 +747,13 @@
                     const points = app.custom_points || app.point_rules?.points;
                     if (!points) throw new Error('无法确定分值');
 
+                    // 根据规则类型决定增减方向
+                    const pointValue = app.point_rules.type === 'add' ? points : -points;
+
                     const { error: rpcError } = await supabaseClient
                         .rpc('increment_student_points', {
                             student_id: app.student_id,
-                            points: points
+                            points: pointValue
                         });
                     if (rpcError) throw rpcError;
                 }
@@ -751,6 +809,7 @@
             document.getElementById('addRuleBtn').addEventListener('click', function() {
                 document.getElementById('ruleModalTitle').innerText = '新建规则';
                 document.getElementById('ruleId').value = '';
+                document.getElementById('ruleType').value = 'add';
                 document.getElementById('ruleName').value = '';
                 document.getElementById('ruleDesc').value = '';
                 document.getElementById('rulePoints').value = 5;
@@ -762,7 +821,6 @@
             document.getElementById('saveStudentBtn').addEventListener('click', saveStudent);
             document.getElementById('closeStudentModalBtn').addEventListener('click', closeStudentModal);
 
-            // 学生搜索
             document.getElementById('studentSearch').addEventListener('input', function(e) {
                 const kw = e.target.value.toLowerCase();
                 document.querySelectorAll('#studentsList tr').forEach(tr => {
@@ -770,7 +828,6 @@
                 });
             });
 
-            // 已审核记录搜索
             document.getElementById('historySearch').addEventListener('input', function(e) {
                 const kw = e.target.value.toLowerCase();
                 document.querySelectorAll('#historyList tr').forEach(tr => {
@@ -805,17 +862,4 @@
                         reviewApplication(target.dataset.id, target.dataset.status);
                         break;
                     case 'deleteHistory':
-                        deleteHistory(target.dataset.id);
-                        break;
-                    default:
-                        console.warn('未知动作:', action);
-                }
-            }
-        });
-
-        // ---------- 初始化 ----------
-        checkTeacherLogin();
-        bindStaticButtons();
-    </script>
-</body>
-</html>
+                        delete
