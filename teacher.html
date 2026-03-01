@@ -146,6 +146,13 @@
             border: 1px solid #ddd;
             border-radius: 8px;
         }
+        .search-box {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 250px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -165,7 +172,7 @@
             </div>
         </div>
 
-        <!-- 标签页（使用 onclick 直接调用） -->
+        <!-- 标签页 -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('rules')">📋 加分规则</button>
             <button class="tab-btn" onclick="switchTab('students')">👥 学生管理</button>
@@ -192,7 +199,7 @@
             <div class="card">
                 <div class="card-header">
                     <h2>学生列表</h2>
-                    <input type="text" id="studentSearch" placeholder="搜索学号或姓名" style="padding:8px;">
+                    <input type="text" id="studentSearch" class="search-box" placeholder="搜索学号或姓名">
                 </div>
                 <table>
                     <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>积分</th><th>操作</th></tr></thead>
@@ -211,9 +218,12 @@
                 </table>
             </div>
             <div class="card">
-                <h2>已审核申请</h2>
+                <div class="card-header">
+                    <h2>已审核记录</h2>
+                    <input type="text" id="historySearch" class="search-box" placeholder="搜索学生姓名或学号">
+                </div>
                 <table>
-                    <thead><tr><th>学生</th><th>项目</th><th>分值</th><th>理由</th><th>状态</th><th>审核时间</th></tr></thead>
+                    <thead><tr><th>学生</th><th>项目</th><th>分值</th><th>理由</th><th>状态</th><th>审核时间</th><th>操作</th></tr></thead>
                     <tbody id="historyList"></tbody>
                 </table>
             </div>
@@ -265,18 +275,10 @@
         // ---------- 全局函数挂载 ----------
         window.switchTab = function(tab) {
             console.log('切换标签页:', tab);
-            // 移除所有面板的 active 类
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            // 移除所有标签按钮的 active 类
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-
-            // 激活目标面板
-            const targetPanel = document.getElementById(tab + 'Panel');
-            if (targetPanel) targetPanel.classList.add('active');
-
-            // 激活对应的标签按钮
-            const targetBtn = document.querySelector(`.tab-btn[onclick*="'${tab}'"]`);
-            if (targetBtn) targetBtn.classList.add('active');
+            document.getElementById(tab + 'Panel').classList.add('active');
+            document.querySelector(`.tab-btn[onclick*="'${tab}'"]`).classList.add('active');
         };
 
         // ---------- Supabase 配置 ----------
@@ -285,7 +287,6 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let isTeacherLoggedIn = false;
-        let currentTab = 'rules';
 
         // 登录/登出
         window.teacherLogin = async function() {
@@ -578,13 +579,12 @@
                     pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核申请</td></tr>';
                 }
 
-                // 已审核（最近20条）
+                // 已审核（无限制，全部加载）
                 const { data: history, error: historyError } = await supabaseClient
                     .from('applications')
                     .select('*, students(name, student_id), point_rules(name, points)')
                     .neq('status', 'pending')
-                    .order('reviewed_at', { ascending: false })
-                    .limit(20);
+                    .order('reviewed_at', { ascending: false });
                 if (historyError) throw historyError;
                 const historyTbody = document.getElementById('historyList');
                 historyTbody.innerHTML = '';
@@ -600,11 +600,14 @@
                             <td>${app.reason || ''}</td>
                             <td><span class="${statusClass}">${statusText}</span></td>
                             <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" data-action="deleteHistory" data-id="${app.id}">删除</button>
+                            </td>
                         `;
                         historyTbody.appendChild(tr);
                     });
                 } else {
-                    historyTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无历史记录</td></tr>';
+                    historyTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">暂无已审核记录</td></tr>';
                 }
             } catch (err) {
                 console.error('加载申请失败:', err);
@@ -645,6 +648,23 @@
             } catch (err) {
                 console.error('审核失败:', err);
                 alert('审核失败：' + err.message);
+            }
+        };
+
+        // 删除已审核记录（不影响积分）
+        window.deleteHistory = async function(id) {
+            console.log('删除已审核记录 ID:', id);
+            if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('applications')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                loadApplications(); // 重新加载列表
+            } catch (err) {
+                console.error('删除失败:', err);
+                alert('删除失败：' + err.message);
             }
         };
 
@@ -693,6 +713,14 @@
                     tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
                 });
             });
+
+            // 已审核记录搜索
+            document.getElementById('historySearch').addEventListener('input', function(e) {
+                const kw = e.target.value.toLowerCase();
+                document.querySelectorAll('#historyList tr').forEach(tr => {
+                    tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                });
+            });
         }
 
         // 动态按钮事件委托
@@ -719,6 +747,9 @@
                         break;
                     case 'reviewApp':
                         reviewApplication(target.dataset.id, target.dataset.status);
+                        break;
+                    case 'deleteHistory':
+                        deleteHistory(target.dataset.id);
                         break;
                     default:
                         console.warn('未知动作:', action);
