@@ -153,6 +153,10 @@
             width: 250px;
             margin-bottom: 15px;
         }
+        .checkbox-col {
+            width: 40px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -194,15 +198,28 @@
             </div>
         </div>
 
-        <!-- 学生管理 -->
+        <!-- 学生管理（带多选清零功能） -->
         <div id="studentsPanel" class="panel">
             <div class="card">
                 <div class="card-header">
                     <h2>学生列表</h2>
-                    <input type="text" id="studentSearch" class="search-box" placeholder="搜索学号或姓名">
+                    <div>
+                        <button class="btn btn-warning" onclick="toggleSelectAll()">全选/取消全选</button>
+                        <button class="btn btn-danger" onclick="clearSelectedPoints()">积分清零（选中）</button>
+                        <input type="text" id="studentSearch" class="search-box" placeholder="搜索学号或姓名">
+                    </div>
                 </div>
                 <table>
-                    <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>积分</th><th>操作</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col"><input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes()"></th>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                            <th>积分</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
                     <tbody id="studentsList"></tbody>
                 </table>
             </div>
@@ -272,7 +289,7 @@
     </div>
 
     <script>
-        // ---------- 全局函数挂载 ----------
+        // ---------- 全局函数 ----------
         window.switchTab = function(tab) {
             console.log('切换标签页:', tab);
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -373,7 +390,6 @@
             }
         }
 
-        // 编辑规则
         window.editRule = async function(id) {
             console.log('编辑规则 ID:', id);
             try {
@@ -395,7 +411,6 @@
             }
         };
 
-        // 切换规则状态
         window.toggleRule = async function(id) {
             console.log('切换规则状态 ID:', id);
             try {
@@ -417,7 +432,6 @@
             }
         };
 
-        // 删除规则
         window.deleteRule = async function(id) {
             console.log('删除规则 ID:', id);
             if (!confirm('确定删除？')) return;
@@ -434,7 +448,6 @@
             }
         };
 
-        // 保存规则（新建/编辑）
         window.saveRule = async function() {
             const id = document.getElementById('ruleId').value;
             const name = document.getElementById('ruleName').value.trim();
@@ -466,12 +479,11 @@
             }
         };
 
-        // 关闭规则模态框
         window.closeRuleModal = function() {
             document.getElementById('ruleModal').style.display = 'none';
         };
 
-        // ---------- 学生管理 ----------
+        // ---------- 学生管理（带多选）----------
         async function loadStudents() {
             console.log('加载学生列表');
             try {
@@ -485,6 +497,7 @@
                 students.forEach(s => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
+                        <td class="checkbox-col"><input type="checkbox" class="student-checkbox" value="${s.id}"></td>
                         <td>${s.student_id}</td>
                         <td>${s.name}</td>
                         <td>${s.class || '1班'}</td>
@@ -498,6 +511,50 @@
                 alert('加载学生失败：' + err.message);
             }
         }
+
+        // 全选/取消全选
+        window.toggleSelectAll = function() {
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            const selectAll = document.getElementById('selectAllCheckbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            if (selectAll) selectAll.checked = !allChecked;
+        };
+
+        // 全选复选框变化
+        window.toggleAllCheckboxes = function() {
+            const selectAll = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        };
+
+        // 积分清零（选中学生）
+        window.clearSelectedPoints = async function() {
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请至少选择一个学生');
+                return;
+            }
+            if (!confirm(`确定要将选中的 ${checkboxes.length} 名学生的积分清零吗？`)) return;
+
+            const studentIds = Array.from(checkboxes).map(cb => cb.value);
+            try {
+                // 逐个更新积分为 0
+                for (const id of studentIds) {
+                    const { error } = await supabaseClient
+                        .from('students')
+                        .update({ total_points: 0 })
+                        .eq('id', id);
+                    if (error) throw error;
+                }
+                alert('积分清零成功');
+                loadStudents();      // 刷新学生列表
+                loadRank();           // 刷新积分排名
+            } catch (err) {
+                console.error('积分清零失败:', err);
+                alert('积分清零失败：' + err.message);
+            }
+        };
 
         window.editStudent = function(id, name, className) {
             console.log('编辑学生:', id, name, className);
@@ -579,7 +636,7 @@
                     pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核申请</td></tr>';
                 }
 
-                // 已审核（无限制，全部加载）
+                // 已审核
                 const { data: history, error: historyError } = await supabaseClient
                     .from('applications')
                     .select('*, students(name, student_id), point_rules(name, points)')
@@ -651,7 +708,6 @@
             }
         };
 
-        // 删除已审核记录（不影响积分）
         window.deleteHistory = async function(id) {
             console.log('删除已审核记录 ID:', id);
             if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
@@ -661,7 +717,7 @@
                     .delete()
                     .eq('id', id);
                 if (error) throw error;
-                loadApplications(); // 重新加载列表
+                loadApplications();
             } catch (err) {
                 console.error('删除失败:', err);
                 alert('删除失败：' + err.message);
@@ -706,7 +762,7 @@
             document.getElementById('saveStudentBtn').addEventListener('click', saveStudent);
             document.getElementById('closeStudentModalBtn').addEventListener('click', closeStudentModal);
 
-            // 搜索学生输入事件
+            // 学生搜索
             document.getElementById('studentSearch').addEventListener('input', function(e) {
                 const kw = e.target.value.toLowerCase();
                 document.querySelectorAll('#studentsList tr').forEach(tr => {
