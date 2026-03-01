@@ -212,7 +212,7 @@
             <h3>提交加分申请</h3>
             <select id="ruleSelect"></select>
             <input type="number" id="customPoints" placeholder="自定义分值（留空则使用默认）">
-            <textarea id="applyReason" rows="3" placeholder="申请理由"></textarea>
+            <textarea id="applyReason" rows="3" placeholder="申请理由（选填）"></textarea>
             <div class="modal-buttons">
                 <button class="btn" onclick="closeModal()">取消</button>
                 <button class="btn" style="background:#667eea; color:white;" onclick="submitApplication()">提交</button>
@@ -354,18 +354,21 @@
         window.submitApplication = async function() {
             const ruleId = document.getElementById('ruleSelect').value;
             const customPoints = document.getElementById('customPoints').value;
-            const reason = document.getElementById('applyReason').value.trim();
-            if (!reason) {
-                alert('请填写申请理由');
-                return;
-            }
+            const reason = document.getElementById('applyReason').value.trim(); // 不再必填
+
+            // 移除理由必填校验
+            // if (!reason) {
+            //     alert('请填写申请理由');
+            //     return;
+            // }
+
             const { error } = await supabaseClient
                 .from('applications')
                 .insert({
                     student_id: currentStudent.id,
                     rule_id: ruleId,
                     custom_points: customPoints ? parseInt(customPoints) : null,
-                    reason: reason,
+                    reason: reason || null,  // 如果为空字符串则存为 null
                     status: 'pending'
                 });
             if (error) {
@@ -399,7 +402,7 @@
                 row.innerHTML = `
                     <td>${app.point_rules?.name || '已删除规则'}</td>
                     <td>${points}</td>
-                    <td>${app.reason}</td>
+                    <td>${app.reason || ''}</td>
                     <td><span class="${statusClass}">${statusText}</span></td>
                     <td>${new Date(app.created_at).toLocaleString()}</td>
                     <td>${app.reviewed_by ? '已处理' : '-'}</td>
