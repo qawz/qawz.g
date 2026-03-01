@@ -322,6 +322,7 @@
 
             // ---------- 标签页切换 ----------
             function switchTab(tab) {
+                console.log('切换到标签页:', tab);
                 currentTab = tab;
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                 document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -331,6 +332,7 @@
 
             // ---------- 规则管理 ----------
             async function loadRules() {
+                console.log('加载规则列表');
                 try {
                     const { data: rules, error } = await supabaseClient
                         .from('point_rules')
@@ -464,6 +466,7 @@
 
             // ---------- 学生管理 ----------
             async function loadStudents() {
+                console.log('加载学生列表');
                 try {
                     const { data: students, error } = await supabaseClient
                         .from('students')
@@ -490,6 +493,7 @@
             }
 
             window.editStudent = function(id, name, className) {
+                console.log('编辑学生:', id, name, className);
                 document.getElementById('editStudentId').value = id;
                 document.getElementById('editStudentName').value = name;
                 document.getElementById('editStudentClass').value = className;
@@ -537,6 +541,7 @@
 
             // ---------- 申请审核 ----------
             async function loadApplications() {
+                console.log('加载申请列表');
                 try {
                     // 待审核
                     const { data: pending, error: pendingError } = await supabaseClient
@@ -639,6 +644,7 @@
 
             // ---------- 积分排名 ----------
             async function loadRank() {
+                console.log('加载积分排名');
                 try {
                     const { data: students, error } = await supabaseClient
                         .from('students')
@@ -658,65 +664,74 @@
                 }
             }
 
-            // ---------- 事件委托绑定 ----------
-            function setupEventDelegation() {
-                // 主容器监听所有点击事件
-                document.getElementById('mainContainer').addEventListener('click', function(e) {
+            // ---------- 全局事件委托 ----------
+            function setupGlobalEventDelegation() {
+                console.log('设置全局事件委托');
+                document.addEventListener('click', function(e) {
                     const target = e.target.closest('button');
                     if (!target) return;
 
                     const action = target.getAttribute('data-action');
-                    if (!action) return;
-
-                    e.preventDefault();
-                    console.log('事件委托触发:', action, target.dataset);
-
-                    switch (action) {
-                        case 'editRule':
-                            editRule(target.dataset.id);
-                            break;
-                        case 'toggleRule':
-                            toggleRule(target.dataset.id);
-                            break;
-                        case 'deleteRule':
-                            deleteRule(target.dataset.id);
-                            break;
-                        case 'editStudent':
-                            editStudent(target.dataset.id, target.dataset.name, target.dataset.class);
-                            break;
-                        case 'reviewApp':
-                            reviewApplication(target.dataset.id, target.dataset.status);
-                            break;
-                        default:
-                            console.warn('未知动作:', action);
+                    if (action) {
+                        e.preventDefault();
+                        console.log('事件委托触发:', action, target.dataset);
+                        switch (action) {
+                            case 'editRule':
+                                editRule(target.dataset.id);
+                                break;
+                            case 'toggleRule':
+                                toggleRule(target.dataset.id);
+                                break;
+                            case 'deleteRule':
+                                deleteRule(target.dataset.id);
+                                break;
+                            case 'editStudent':
+                                editStudent(target.dataset.id, target.dataset.name, target.dataset.class);
+                                break;
+                            case 'reviewApp':
+                                reviewApplication(target.dataset.id, target.dataset.status);
+                                break;
+                            default:
+                                console.warn('未知动作:', action);
+                        }
+                    } else {
+                        // 处理静态按钮 ID
+                        const id = target.id;
+                        if (id) {
+                            console.log('静态按钮点击:', id);
+                            switch (id) {
+                                case 'addRuleBtn':
+                                    document.getElementById('ruleModalTitle').innerText = '新建规则';
+                                    document.getElementById('ruleId').value = '';
+                                    document.getElementById('ruleName').value = '';
+                                    document.getElementById('ruleDesc').value = '';
+                                    document.getElementById('rulePoints').value = 5;
+                                    document.getElementById('ruleModal').style.display = 'flex';
+                                    break;
+                                case 'saveRuleBtn':
+                                    saveRule();
+                                    break;
+                                case 'closeRuleModalBtn':
+                                    closeRuleModal();
+                                    break;
+                                case 'saveStudentBtn':
+                                    saveStudent();
+                                    break;
+                                case 'closeStudentModalBtn':
+                                    closeStudentModal();
+                                    break;
+                                default:
+                                    // 标签页切换通过 data-tab 处理
+                                    const tabBtn = target.closest('.tab-btn');
+                                    if (tabBtn && tabBtn.dataset.tab) {
+                                        switchTab(tabBtn.dataset.tab);
+                                    }
+                            }
+                        }
                     }
                 });
 
-                // 特殊按钮单独绑定（非动态生成）
-                document.getElementById('addRuleBtn').addEventListener('click', function() {
-                    console.log('新建规则按钮');
-                    document.getElementById('ruleModalTitle').innerText = '新建规则';
-                    document.getElementById('ruleId').value = '';
-                    document.getElementById('ruleName').value = '';
-                    document.getElementById('ruleDesc').value = '';
-                    document.getElementById('rulePoints').value = 5;
-                    document.getElementById('ruleModal').style.display = 'flex';
-                });
-
-                document.getElementById('saveRuleBtn').addEventListener('click', saveRule);
-                document.getElementById('closeRuleModalBtn').addEventListener('click', closeRuleModal);
-
-                document.getElementById('saveStudentBtn').addEventListener('click', saveStudent);
-                document.getElementById('closeStudentModalBtn').addEventListener('click', closeStudentModal);
-
-                // 标签页切换
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        switchTab(this.dataset.tab);
-                    });
-                });
-
-                // 搜索学生
+                // 搜索学生输入事件
                 document.getElementById('studentSearch').addEventListener('input', function(e) {
                     const kw = e.target.value.toLowerCase();
                     document.querySelectorAll('#studentsList tr').forEach(tr => {
@@ -727,7 +742,7 @@
 
             // ---------- 初始化 ----------
             checkTeacherLogin();
-            setupEventDelegation();
+            setupGlobalEventDelegation();
         })();
     </script>
 </body>
