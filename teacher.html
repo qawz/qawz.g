@@ -7,7 +7,7 @@
     <meta name="description" content="教师可管理加分/扣分规则、审核学生申请、查看积分排名，支持批量操作和积分清零。">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 样式与之前相同，此处省略以节省篇幅，请保留原有完整样式 */
+        /* 样式与之前相同，此处省略以节省篇幅，实际使用时请复制之前的完整样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -176,7 +176,7 @@
     </style>
 </head>
 <body>
-    <!-- 登录部分 -->
+    <!-- 登录部分，与之前相同，完整保留 -->
     <div id="loginContainer" class="login-container">
         <h2>教师登录</h2>
         <input type="text" id="username" placeholder="用户名" value="admin">
@@ -673,12 +673,12 @@
             } catch (err) { alert('保存失败：' + err.message); }
         }
 
-        // ========== 申请审核（使用列名推断外键）==========
+        // ========== 申请审核（彻底修复 ambiguous 错误，使用明确的别名）==========
         async function loadApplications() {
             const pendingTbody = document.getElementById('pendingList');
             const historyTbody = document.getElementById('historyList');
             try {
-                // 待审核
+                // 待审核 - 使用明确的表别名，并在 select 字段中明确指定来源
                 const { data: pending, error: pendingError } = await supabaseClient
                     .from('applications')
                     .select(`
@@ -687,8 +687,8 @@
                         reason,
                         status,
                         created_at,
-                        students!student_id (name, student_id),
-                        point_rules!rule_id (name, points, type)
+                        students!applications_student_id_fkey (name, student_id),
+                        point_rules!applications_rule_id_fkey (name, points, type)
                     `)
                     .eq('status', 'pending')
                     .order('created_at');
@@ -720,7 +720,7 @@
                     }
                 }
 
-                // 已审核
+                // 已审核 - 同样使用完整外键语法
                 const { data: history, error: historyError } = await supabaseClient
                     .from('applications')
                     .select(`
@@ -729,8 +729,8 @@
                         reason,
                         status,
                         reviewed_at,
-                        students!student_id (name, student_id),
-                        point_rules!rule_id (name, points, type)
+                        students!applications_student_id_fkey (name, student_id),
+                        point_rules!applications_rule_id_fkey (name, points, type)
                     `)
                     .neq('status', 'pending')
                     .order('reviewed_at', { ascending: false });
@@ -789,7 +789,7 @@
                             .select(`
                                 student_id,
                                 custom_points,
-                                point_rules!rule_id (points, type)
+                                point_rules!applications_rule_id_fkey (points, type)
                             `)
                             .eq('id', id)
                             .single();
@@ -831,7 +831,7 @@
                         .select(`
                             student_id,
                             custom_points,
-                            point_rules!rule_id (points, type)
+                            point_rules!applications_rule_id_fkey (points, type)
                         `)
                         .eq('id', id)
                         .single();
