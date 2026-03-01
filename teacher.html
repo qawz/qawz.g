@@ -371,7 +371,7 @@
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ========== 登录/登出 ==========
-        async function teacherLogin() {
+        window.teacherLogin = async function() {
             console.log('登录函数被调用');
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -403,12 +403,12 @@
                 console.error('登录错误:', err);
                 document.getElementById('loginError').innerText = '系统错误：' + err.message;
             }
-        }
+        };
 
-        function teacherLogout() {
+        window.teacherLogout = function() {
             sessionStorage.removeItem('teacherLoggedIn');
             location.reload();
-        }
+        };
 
         function checkTeacherLogin() {
             if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
@@ -425,7 +425,7 @@
         }
 
         // ========== 标签页切换 ==========
-        function switchTab(tab) {
+        window.switchTab = function(tab) {
             console.log('切换标签页:', tab);
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -437,7 +437,7 @@
                     btn.classList.add('active');
                 }
             });
-        }
+        };
 
         // ========== 规则管理 ==========
         async function loadRules() {
@@ -485,7 +485,7 @@
             }
         }
 
-        async function editRule(id) {
+        window.editRule = async function(id) {
             try {
                 const { data: rule, error } = await supabase
                     .from('point_rules')
@@ -504,9 +504,9 @@
             } catch (err) {
                 alert('获取规则失败：' + err.message);
             }
-        }
+        };
 
-        async function toggleRule(id) {
+        window.toggleRule = async function(id) {
             try {
                 const { data: rule, error } = await supabase
                     .from('point_rules')
@@ -525,9 +525,9 @@
             } catch (err) {
                 alert('切换失败：' + err.message);
             }
-        }
+        };
 
-        async function deleteRule(id) {
+        window.deleteRule = async function(id) {
             if (!confirm('确定删除？')) return;
             try {
                 const { error } = await supabase
@@ -539,9 +539,9 @@
             } catch (err) {
                 alert('删除失败：' + err.message);
             }
-        }
+        };
 
-        async function saveRule() {
+        window.saveRule = async function() {
             const id = document.getElementById('ruleId').value;
             const type = document.getElementById('ruleType').value;
             const name = document.getElementById('ruleName').value.trim();
@@ -573,11 +573,11 @@
             } catch (err) {
                 alert('保存失败：' + err.message);
             }
-        }
+        };
 
-        function closeRuleModal() {
+        window.closeRuleModal = function() {
             document.getElementById('ruleModal').style.display = 'none';
-        }
+        };
 
         // ========== 学生管理 ==========
         async function loadStudents() {
@@ -618,7 +618,7 @@
             }
         }
 
-        function toggleSelectAll(type) {
+        window.toggleSelectAll = function(type) {
             let checkboxes, selectAll;
             if (type === 'student') {
                 checkboxes = document.querySelectorAll('.student-checkbox');
@@ -632,9 +632,9 @@
             const allChecked = Array.from(checkboxes).every(cb => cb.checked);
             checkboxes.forEach(cb => cb.checked = !allChecked);
             if (selectAll) selectAll.checked = !allChecked;
-        }
+        };
 
-        function toggleAllCheckboxes(type) {
+        window.toggleAllCheckboxes = function(type) {
             let checkboxes, selectAll;
             if (type === 'student') {
                 checkboxes = document.querySelectorAll('.student-checkbox');
@@ -646,9 +646,9 @@
                 return;
             }
             checkboxes.forEach(cb => cb.checked = selectAll.checked);
-        }
+        };
 
-        async function clearSelectedPoints() {
+        window.clearSelectedPoints = async function() {
             const checkboxes = document.querySelectorAll('.student-checkbox:checked');
             if (checkboxes.length === 0) {
                 alert('请至少选择一个学生');
@@ -675,21 +675,21 @@
             alert(`积分清零完成：${successCount} 个成功`);
             loadStudents();
             loadRank();
-        }
+        };
 
-        function editStudent(id, name, className) {
+        window.editStudent = function(id, name, className) {
             document.getElementById('editStudentId').value = id;
             document.getElementById('editStudentName').value = name;
             document.getElementById('editStudentClass').value = className;
             document.getElementById('editStudentPoints').value = 0;
             document.getElementById('studentModal').style.display = 'flex';
-        }
+        };
 
-        function closeStudentModal() {
+        window.closeStudentModal = function() {
             document.getElementById('studentModal').style.display = 'none';
-        }
+        };
 
-        async function saveStudent() {
+        window.saveStudent = async function() {
             const id = document.getElementById('editStudentId').value;
             const name = document.getElementById('editStudentName').value.trim();
             const className = document.getElementById('editStudentClass').value.trim();
@@ -719,7 +719,7 @@
             } catch (err) {
                 alert('保存失败：' + err.message);
             }
-        }
+        };
 
         // ========== 申请审核 ==========
         async function loadApplications() {
@@ -809,7 +809,7 @@
             }
         }
 
-        async function batchReview(status) {
+        window.batchReview = async function(status) {
             const checkboxes = document.querySelectorAll('.pending-checkbox:checked');
             if (checkboxes.length === 0) {
                 alert('请至少选择一个申请');
@@ -864,9 +864,9 @@
             
             const selectAll = document.getElementById('selectAllPending');
             if (selectAll) selectAll.checked = false;
-        }
+        };
 
-        async function reviewApplication(id, status) {
+        window.reviewApplication = async function(id, status) {
             try {
                 const { error: updateError } = await supabase
                     .from('applications')
@@ -900,7 +900,93 @@
             } catch (err) {
                 alert('审核失败：' + err.message);
             }
+        };
+
+        window.deleteHistory = async function(id) {
+            if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
+            try {
+                const { error } = await supabase
+                    .from('applications')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                loadApplications();
+            } catch (err) {
+                alert('删除失败：' + err.message);
+            }
+        };
+
+        // ========== 积分排名 ==========
+        async function loadRank() {
+            console.log('加载积分排名');
+            const tbody = document.getElementById('rankList');
+            if (!tbody) return;
+            
+            try {
+                const { data: students, error } = await supabase
+                    .from('students')
+                    .select('student_id, name, class, total_points')
+                    .order('total_points', { ascending: false });
+                
+                if (error) throw error;
+                
+                tbody.innerHTML = '';
+                
+                students.forEach((s, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${idx+1}</td><td>${s.student_id}</td><td>${s.name}</td><td>${s.class || '1班'}</td><td>${s.total_points}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载排名失败:', err);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
+            }
         }
 
-        async function deleteHistory(id) {
-            if (!confirm('确定删除此记录吗？
+        // ========== 静态按钮事件绑定 ==========
+        function initEventListeners() {
+            const addRuleBtn = document.getElementById('addRuleBtn');
+            if (addRuleBtn) {
+                addRuleBtn.addEventListener('click', function() {
+                    document.getElementById('ruleModalTitle').innerText = '新建规则';
+                    document.getElementById('ruleId').value = '';
+                    document.getElementById('ruleType').value = 'add';
+                    document.getElementById('ruleName').value = '';
+                    document.getElementById('ruleDesc').value = '';
+                    document.getElementById('rulePoints').value = 5;
+                    document.getElementById('ruleModal').style.display = 'flex';
+                });
+            }
+
+            document.getElementById('saveRuleBtn')?.addEventListener('click', saveRule);
+            document.getElementById('closeRuleModalBtn')?.addEventListener('click', closeRuleModal);
+            document.getElementById('saveStudentBtn')?.addEventListener('click', saveStudent);
+            document.getElementById('closeStudentModalBtn')?.addEventListener('click', closeStudentModal);
+
+            const studentSearch = document.getElementById('studentSearch');
+            if (studentSearch) {
+                studentSearch.addEventListener('input', function(e) {
+                    const kw = e.target.value.toLowerCase();
+                    document.querySelectorAll('#studentsList tr').forEach(tr => {
+                        tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                    });
+                });
+            }
+
+            const historySearch = document.getElementById('historySearch');
+            if (historySearch) {
+                historySearch.addEventListener('input', function(e) {
+                    const kw = e.target.value.toLowerCase();
+                    document.querySelectorAll('#historyList tr').forEach(tr => {
+                        tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                    });
+                });
+            }
+        }
+
+        // ========== 初始化 ==========
+        checkTeacherLogin();
+        initEventListeners();
+    </script>
+</body>
+</html>
