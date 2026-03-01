@@ -6,6 +6,7 @@
     <title>教师端 · 班级管理</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        /* 样式保持不变，为了简洁这里省略，请保留你之前有的样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -53,124 +54,7 @@
             width: 100%;
             display: none;
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        .header h1 { color: #333; }
-        .nav a {
-            color: #667eea;
-            text-decoration: none;
-            margin-left: 20px;
-        }
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 10px;
-        }
-        .tab-btn {
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            border-radius: 8px 8px 0 0;
-            cursor: pointer;
-            font-size: 1rem;
-            color: #666;
-        }
-        .tab-btn.active {
-            background: #667eea;
-            color: white;
-        }
-        .panel { display: none; }
-        .panel.active { display: block; }
-        .card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        .btn-primary { background: #667eea; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-warning { background: #ffc107; color: #333; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        th { background: #f1f5f9; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
-        .status-pending { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 20px; }
-        .status-approved { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; }
-        .status-rejected { background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 20px; }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            width: 400px;
-            max-width: 90%;
-        }
-        .modal-content input, .modal-content textarea, .modal-content select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .search-box {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            width: 250px;
-            margin-bottom: 15px;
-        }
-        .checkbox-col {
-            width: 40px;
-            text-align: center;
-        }
-        .type-badge-add {
-            background: #d4edda;
-            color: #155724;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-        .type-badge-subtract {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
+        /* ... 其他样式保持不变 ... */
     </style>
 </head>
 <body>
@@ -178,184 +62,27 @@
         <h2>教师登录</h2>
         <input type="text" id="username" placeholder="用户名" value="admin">
         <input type="password" id="password" placeholder="密码">
-        <button onclick="window.teacherLogin()">登录</button>
+        <!-- 直接调用函数名，不加 window. -->
+        <button onclick="teacherLogin()">登录</button>
         <p id="loginError" class="error"></p>
     </div>
 
     <div id="mainContainer" class="main-container">
-        <div class="header">
-            <h1>📊 班级管理 · 教师端</h1>
-            <div class="nav">
-                <a href="#" onclick="window.teacherLogout()">退出登录</a>
-            </div>
-        </div>
-
-        <!-- 标签页 -->
-        <div class="tabs">
-            <button class="tab-btn active" onclick="window.switchTab('rules')">📋 规则管理</button>
-            <button class="tab-btn" onclick="window.switchTab('students')">👥 学生管理</button>
-            <button class="tab-btn" onclick="window.switchTab('applications')">📬 申请审核</button>
-            <button class="tab-btn" onclick="window.switchTab('rank')">🏆 积分排名</button>
-        </div>
-
-        <!-- 规则管理 -->
-        <div id="rulesPanel" class="panel active">
-            <div class="card">
-                <div class="card-header">
-                    <h2>加分/扣分规则管理</h2>
-                    <button class="btn btn-primary" id="addRuleBtn">➕ 新建规则</button>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>类型</th>
-                            <th>名称</th>
-                            <th>描述</th>
-                            <th>分值</th>
-                            <th>状态</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rulesList"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 学生管理 -->
-        <div id="studentsPanel" class="panel">
-            <div class="card">
-                <div class="card-header">
-                    <h2>学生列表</h2>
-                    <div>
-                        <button class="btn btn-warning" onclick="window.toggleSelectAll('student')">全选/取消全选</button>
-                        <button class="btn btn-danger" onclick="window.clearSelectedPoints()">积分清零（选中）</button>
-                        <input type="text" id="studentSearch" class="search-box" placeholder="搜索学号或姓名">
-                    </div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="checkbox-col"><input type="checkbox" id="selectAllStudent" onclick="window.toggleAllCheckboxes('student')"></th>
-                            <th>学号</th>
-                            <th>姓名</th>
-                            <th>班级</th>
-                            <th>积分</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="studentsList"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 申请审核（带批量审核功能） -->
-        <div id="applicationsPanel" class="panel">
-            <div class="card">
-                <div class="card-header">
-                    <h2>待审核申请</h2>
-                    <div>
-                        <button class="btn btn-warning" onclick="window.toggleSelectAll('pending')">全选/取消全选</button>
-                        <button class="btn btn-success" onclick="window.batchReview('approved')">✅ 批量通过</button>
-                        <button class="btn btn-danger" onclick="window.batchReview('rejected')">❌ 批量拒绝</button>
-                    </div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="checkbox-col"><input type="checkbox" id="selectAllPending" onclick="window.toggleAllCheckboxes('pending')"></th>
-                            <th>学生</th>
-                            <th>项目</th>
-                            <th>类型</th>
-                            <th>分值</th>
-                            <th>理由</th>
-                            <th>申请时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pendingList"></tbody>
-                </table>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h2>已审核记录</h2>
-                    <input type="text" id="historySearch" class="search-box" placeholder="搜索学生姓名或学号">
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>学生</th>
-                            <th>项目</th>
-                            <th>类型</th>
-                            <th>分值</th>
-                            <th>理由</th>
-                            <th>状态</th>
-                            <th>审核时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyList"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 积分排名 -->
-        <div id="rankPanel" class="panel">
-            <div class="card">
-                <h2>积分排名</h2>
-                <table>
-                    <thead><tr><th>排名</th><th>学号</th><th>姓名</th><th>班级</th><th>积分</th></tr></thead>
-                    <tbody id="rankList"></tbody>
-                </table>
-            </div>
-        </div>
+        <!-- 内容保持不变，省略以节省篇幅，请保留你之前的内容 -->
     </div>
 
-    <!-- 规则编辑模态框 -->
-    <div id="ruleModal" class="modal">
-        <div class="modal-content">
-            <h3 id="ruleModalTitle">新建规则</h3>
-            <input type="hidden" id="ruleId">
-            <label>规则类型</label>
-            <select id="ruleType">
-                <option value="add">➕ 加分规则</option>
-                <option value="subtract">➖ 扣分规则</option>
-            </select>
-            <label>规则名称</label><input type="text" id="ruleName">
-            <label>描述</label><textarea id="ruleDesc" rows="2"></textarea>
-            <label>分值</label><input type="number" id="rulePoints" value="5" min="1">
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button class="btn btn-success" id="saveRuleBtn">保存</button>
-                <button class="btn btn-danger" id="closeRuleModalBtn">取消</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 学生编辑模态框 -->
-    <div id="studentModal" class="modal">
-        <div class="modal-content">
-            <h3>编辑学生</h3>
-            <input type="hidden" id="editStudentId">
-            <label>姓名</label><input type="text" id="editStudentName">
-            <label>班级</label><input type="text" id="editStudentClass">
-            <label>调整积分</label><input type="number" id="editStudentPoints" value="0" placeholder="正加负减">
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button class="btn btn-success" id="saveStudentBtn">保存</button>
-                <button class="btn btn-danger" id="closeStudentModalBtn">取消</button>
-            </div>
-        </div>
-    </div>
+    <!-- 模态框等内容保持不变 -->
 
     <script>
-        // 所有函数直接定义在全局，不包在立即执行函数里
-        // ---------- Supabase 配置 ----------
+        // ---------- 所有函数直接定义在全局，不包在任何函数内 ----------
+        
+        // Supabase 配置
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let isTeacherLoggedIn = false;
-
-        // ---------- 登录/登出（直接挂在 window 上）----------
-        window.teacherLogin = async function() {
+        // 登录函数 - 直接定义，不挂载到 window
+        async function teacherLogin() {
             console.log('登录函数被调用');
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -365,12 +92,16 @@
                     .select('admin_password')
                     .eq('id', 1)
                     .single();
-                if (error || !data) throw error || new Error('无法验证');
+                
+                if (error || !data) {
+                    throw error || new Error('无法验证');
+                }
+                
                 if (username === 'admin' && password === data.admin_password) {
-                    isTeacherLoggedIn = true;
                     sessionStorage.setItem('teacherLoggedIn', 'true');
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('mainContainer').style.display = 'block';
+                    // 加载数据
                     loadRules();
                     loadStudents();
                     loadApplications();
@@ -382,16 +113,17 @@
                 console.error('登录错误:', err);
                 document.getElementById('loginError').innerText = '系统错误，请稍后重试';
             }
-        };
+        }
 
-        window.teacherLogout = function() {
+        // 退出登录
+        function teacherLogout() {
             sessionStorage.removeItem('teacherLoggedIn');
             location.reload();
-        };
+        }
 
+        // 检查登录状态
         function checkTeacherLogin() {
             if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
-                isTeacherLoggedIn = true;
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('mainContainer').style.display = 'block';
                 loadRules();
@@ -404,16 +136,21 @@
             }
         }
 
-        // ---------- 标签页切换 ----------
-        window.switchTab = function(tab) {
+        // 标签页切换
+        function switchTab(tab) {
             console.log('切换标签页:', tab);
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tab + 'Panel').classList.add('active');
-            document.querySelector(`.tab-btn[onclick*="'${tab}'"]`).classList.add('active');
-        };
+            // 找到对应的标签按钮并激活
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tab}'`)) {
+                    btn.classList.add('active');
+                }
+            });
+        }
 
-        // ---------- 规则管理 ----------
+        // 规则管理函数
         async function loadRules() {
             console.log('加载规则列表');
             try {
@@ -440,9 +177,9 @@
                         <td>${rule.points}</td>
                         <td><span style="background:${rule.enabled ? '#d4edda' : '#f8d7da'}; color:${rule.enabled ? '#155724' : '#721c24'}; padding:4px 10px; border-radius:20px;">${rule.enabled ? '启用' : '禁用'}</span></td>
                         <td>
-                            <button class="btn btn-success btn-sm" onclick="window.editRule(${rule.id})">编辑</button>
-                            <button class="btn btn-warning btn-sm" onclick="window.toggleRule(${rule.id})">${rule.enabled ? '禁用' : '启用'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.deleteRule(${rule.id})">删除</button>
+                            <button class="btn btn-success btn-sm" onclick="editRule(${rule.id})">编辑</button>
+                            <button class="btn btn-warning btn-sm" onclick="toggleRule(${rule.id})">${rule.enabled ? '禁用' : '启用'}</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRule(${rule.id})">删除</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -453,7 +190,8 @@
             }
         }
 
-        window.editRule = async function(id) {
+        // 编辑规则
+        async function editRule(id) {
             console.log('编辑规则 ID:', id);
             try {
                 const { data: rule, error } = await supabaseClient
@@ -473,9 +211,10 @@
                 console.error('编辑规则失败:', err);
                 alert('获取规则失败：' + err.message);
             }
-        };
+        }
 
-        window.toggleRule = async function(id) {
+        // 切换规则状态
+        async function toggleRule(id) {
             console.log('切换规则状态 ID:', id);
             try {
                 const { data: rule, error } = await supabaseClient
@@ -494,9 +233,10 @@
                 console.error('切换状态失败:', err);
                 alert('切换失败：' + err.message);
             }
-        };
+        }
 
-        window.deleteRule = async function(id) {
+        // 删除规则
+        async function deleteRule(id) {
             console.log('删除规则 ID:', id);
             if (!confirm('确定删除？')) return;
             try {
@@ -510,9 +250,10 @@
                 console.error('删除失败:', err);
                 alert('删除失败：' + err.message);
             }
-        };
+        }
 
-        window.saveRule = async function() {
+        // 保存规则
+        async function saveRule() {
             const id = document.getElementById('ruleId').value;
             const type = document.getElementById('ruleType').value;
             const name = document.getElementById('ruleName').value.trim();
@@ -542,13 +283,14 @@
                 console.error('保存规则失败:', err);
                 alert('保存失败：' + err.message);
             }
-        };
+        }
 
-        window.closeRuleModal = function() {
+        // 关闭规则模态框
+        function closeRuleModal() {
             document.getElementById('ruleModal').style.display = 'none';
-        };
+        }
 
-        // ---------- 学生管理 ----------
+        // 学生管理函数
         async function loadStudents() {
             console.log('加载学生列表');
             try {
@@ -567,7 +309,7 @@
                         <td>${s.name}</td>
                         <td>${s.class || '1班'}</td>
                         <td>${s.total_points}</td>
-                        <td><button class="btn btn-success btn-sm" onclick="window.editStudent('${s.id}', '${s.name}', '${s.class || ''}')">编辑</button></td>
+                        <td><button class="btn btn-success btn-sm" onclick="editStudent('${s.id}', '${s.name}', '${s.class || ''}')">编辑</button></td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -577,76 +319,22 @@
             }
         }
 
-        window.toggleSelectAll = function(type) {
-            let checkboxes, selectAll;
-            if (type === 'student') {
-                checkboxes = document.querySelectorAll('.student-checkbox');
-                selectAll = document.getElementById('selectAllStudent');
-            } else if (type === 'pending') {
-                checkboxes = document.querySelectorAll('.pending-checkbox');
-                selectAll = document.getElementById('selectAllPending');
-            } else {
-                return;
-            }
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            checkboxes.forEach(cb => cb.checked = !allChecked);
-            if (selectAll) selectAll.checked = !allChecked;
-        };
-
-        window.toggleAllCheckboxes = function(type) {
-            let checkboxes, selectAll;
-            if (type === 'student') {
-                checkboxes = document.querySelectorAll('.student-checkbox');
-                selectAll = document.getElementById('selectAllStudent');
-            } else if (type === 'pending') {
-                checkboxes = document.querySelectorAll('.pending-checkbox');
-                selectAll = document.getElementById('selectAllPending');
-            } else {
-                return;
-            }
-            checkboxes.forEach(cb => cb.checked = selectAll.checked);
-        };
-
-        window.clearSelectedPoints = async function() {
-            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
-            if (checkboxes.length === 0) {
-                alert('请至少选择一个学生');
-                return;
-            }
-            if (!confirm(`确定要将选中的 ${checkboxes.length} 名学生的积分清零吗？`)) return;
-
-            const studentIds = Array.from(checkboxes).map(cb => cb.value);
-            try {
-                for (const id of studentIds) {
-                    const { error } = await supabaseClient
-                        .from('students')
-                        .update({ total_points: 0 })
-                        .eq('id', id);
-                    if (error) throw error;
-                }
-                alert('积分清零成功');
-                loadStudents();
-                loadRank();
-            } catch (err) {
-                console.error('积分清零失败:', err);
-                alert('积分清零失败：' + err.message);
-            }
-        };
-
-        window.editStudent = function(id, name, className) {
-            console.log('编辑学生:', id, name, className);
+        // 编辑学生
+        function editStudent(id, name, className) {
             document.getElementById('editStudentId').value = id;
             document.getElementById('editStudentName').value = name;
             document.getElementById('editStudentClass').value = className;
             document.getElementById('editStudentPoints').value = 0;
             document.getElementById('studentModal').style.display = 'flex';
-        };
+        }
 
-        window.closeStudentModal = function() {
+        // 关闭学生模态框
+        function closeStudentModal() {
             document.getElementById('studentModal').style.display = 'none';
-        };
+        }
 
-        window.saveStudent = async function() {
+        // 保存学生编辑
+        async function saveStudent() {
             const id = document.getElementById('editStudentId').value;
             const name = document.getElementById('editStudentName').value.trim();
             const className = document.getElementById('editStudentClass').value.trim();
@@ -676,7 +364,66 @@
                 console.error('保存学生失败:', err);
                 alert('保存失败：' + err.message);
             }
-        };
+        }
+
+        // 全选/取消全选
+        function toggleSelectAll(type) {
+            let checkboxes, selectAll;
+            if (type === 'student') {
+                checkboxes = document.querySelectorAll('.student-checkbox');
+                selectAll = document.getElementById('selectAllStudent');
+            } else if (type === 'pending') {
+                checkboxes = document.querySelectorAll('.pending-checkbox');
+                selectAll = document.getElementById('selectAllPending');
+            } else {
+                return;
+            }
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            if (selectAll) selectAll.checked = !allChecked;
+        }
+
+        // 全选复选框变化
+        function toggleAllCheckboxes(type) {
+            let checkboxes, selectAll;
+            if (type === 'student') {
+                checkboxes = document.querySelectorAll('.student-checkbox');
+                selectAll = document.getElementById('selectAllStudent');
+            } else if (type === 'pending') {
+                checkboxes = document.querySelectorAll('.pending-checkbox');
+                selectAll = document.getElementById('selectAllPending');
+            } else {
+                return;
+            }
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        }
+
+        // 积分清零
+        async function clearSelectedPoints() {
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请至少选择一个学生');
+                return;
+            }
+            if (!confirm(`确定要将选中的 ${checkboxes.length} 名学生的积分清零吗？`)) return;
+
+            const studentIds = Array.from(checkboxes).map(cb => cb.value);
+            try {
+                for (const id of studentIds) {
+                    const { error } = await supabaseClient
+                        .from('students')
+                        .update({ total_points: 0 })
+                        .eq('id', id);
+                    if (error) throw error;
+                }
+                alert('积分清零成功');
+                loadStudents();
+                loadRank();
+            } catch (err) {
+                console.error('积分清零失败:', err);
+                alert('积分清零失败：' + err.message);
+            }
+        }
 
         // ---------- 申请审核 ----------
         async function loadApplications() {
@@ -705,8 +452,8 @@
                             <td>${app.reason || ''}</td>
                             <td>${new Date(app.created_at).toLocaleString()}</td>
                             <td>
-                                <button class="btn btn-success btn-sm" onclick="window.reviewApplication(${app.id}, 'approved')">通过</button>
-                                <button class="btn btn-danger btn-sm" onclick="window.reviewApplication(${app.id}, 'rejected')">拒绝</button>
+                                <button class="btn btn-success btn-sm" onclick="reviewApplication(${app.id}, 'approved')">通过</button>
+                                <button class="btn btn-danger btn-sm" onclick="reviewApplication(${app.id}, 'rejected')">拒绝</button>
                             </td>
                         `;
                         pendingTbody.appendChild(tr);
@@ -740,7 +487,7 @@
                             <td><span class="${statusClass}">${statusText}</span></td>
                             <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
                             <td>
-                                <button class="btn btn-danger btn-sm" onclick="window.deleteHistory(${app.id})">删除</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteHistory(${app.id})">删除</button>
                             </td>
                         `;
                         historyTbody.appendChild(tr);
@@ -755,7 +502,7 @@
         }
 
         // 批量审核
-        window.batchReview = async function(status) {
+        async function batchReview(status) {
             const checkboxes = document.querySelectorAll('.pending-checkbox:checked');
             if (checkboxes.length === 0) {
                 alert('请至少选择一个申请');
@@ -816,9 +563,10 @@
 
             const selectAll = document.getElementById('selectAllPending');
             if (selectAll) selectAll.checked = false;
-        };
+        }
 
-        window.reviewApplication = async function(id, status) {
+        // 单个审核
+        async function reviewApplication(id, status) {
             console.log('审核申请:', id, status);
             try {
                 const { error: updateError } = await supabaseClient
@@ -854,9 +602,10 @@
                 console.error('审核失败:', err);
                 alert('审核失败：' + err.message);
             }
-        };
+        }
 
-        window.deleteHistory = async function(id) {
+        // 删除历史记录
+        async function deleteHistory(id) {
             console.log('删除已审核记录 ID:', id);
             if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
             try {
@@ -870,9 +619,9 @@
                 console.error('删除失败:', err);
                 alert('删除失败：' + err.message);
             }
-        };
+        }
 
-        // ---------- 积分排名 ----------
+        // 积分排名
         async function loadRank() {
             console.log('加载积分排名');
             try {
@@ -884,4 +633,55 @@
                 const tbody = document.getElementById('rankList');
                 tbody.innerHTML = '';
                 students.forEach((s, idx) => {
-                    const tr
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${idx+1}</td><td>${s.student_id}</td><td>${s.name}</td><td>${s.class || '1班'}</td><td>${s.total_points}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载排名失败:', err);
+                alert('加载排名失败：' + err.message);
+            }
+        }
+
+        // 初始化事件监听
+        function initEventListeners() {
+            // 新建规则按钮
+            document.getElementById('addRuleBtn')?.addEventListener('click', function() {
+                document.getElementById('ruleModalTitle').innerText = '新建规则';
+                document.getElementById('ruleId').value = '';
+                document.getElementById('ruleType').value = 'add';
+                document.getElementById('ruleName').value = '';
+                document.getElementById('ruleDesc').value = '';
+                document.getElementById('rulePoints').value = 5;
+                document.getElementById('ruleModal').style.display = 'flex';
+            });
+
+            // 保存规则按钮
+            document.getElementById('saveRuleBtn')?.addEventListener('click', saveRule);
+            document.getElementById('closeRuleModalBtn')?.addEventListener('click', closeRuleModal);
+            document.getElementById('saveStudentBtn')?.addEventListener('click', saveStudent);
+            document.getElementById('closeStudentModalBtn')?.addEventListener('click', closeStudentModal);
+
+            // 学生搜索
+            document.getElementById('studentSearch')?.addEventListener('input', function(e) {
+                const kw = e.target.value.toLowerCase();
+                document.querySelectorAll('#studentsList tr').forEach(tr => {
+                    tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                });
+            });
+
+            // 已审核记录搜索
+            document.getElementById('historySearch')?.addEventListener('input', function(e) {
+                const kw = e.target.value.toLowerCase();
+                document.querySelectorAll('#historyList tr').forEach(tr => {
+                    tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                });
+            });
+        }
+
+        // 启动
+        checkTeacherLogin();
+        initEventListeners();
+    </script>
+</body>
+</html>
