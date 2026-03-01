@@ -178,7 +178,7 @@
         <h2>教师登录</h2>
         <input type="text" id="username" placeholder="用户名" value="admin">
         <input type="password" id="password" placeholder="密码">
-        <button onclick="teacherLogin()">登录</button>
+        <button onclick="window.teacherLogin()">登录</button>
         <p id="loginError" class="error"></p>
     </div>
 
@@ -186,16 +186,16 @@
         <div class="header">
             <h1>📊 班级管理 · 教师端</h1>
             <div class="nav">
-                <a href="#" onclick="teacherLogout()">退出登录</a>
+                <a href="#" onclick="window.teacherLogout()">退出登录</a>
             </div>
         </div>
 
         <!-- 标签页 -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('rules')">📋 规则管理</button>
-            <button class="tab-btn" onclick="switchTab('students')">👥 学生管理</button>
-            <button class="tab-btn" onclick="switchTab('applications')">📬 申请审核</button>
-            <button class="tab-btn" onclick="switchTab('rank')">🏆 积分排名</button>
+            <button class="tab-btn active" onclick="window.switchTab('rules')">📋 规则管理</button>
+            <button class="tab-btn" onclick="window.switchTab('students')">👥 学生管理</button>
+            <button class="tab-btn" onclick="window.switchTab('applications')">📬 申请审核</button>
+            <button class="tab-btn" onclick="window.switchTab('rank')">🏆 积分排名</button>
         </div>
 
         <!-- 规则管理 -->
@@ -227,15 +227,15 @@
                 <div class="card-header">
                     <h2>学生列表</h2>
                     <div>
-                        <button class="btn btn-warning" onclick="toggleSelectAll('student')">全选/取消全选</button>
-                        <button class="btn btn-danger" onclick="clearSelectedPoints()">积分清零（选中）</button>
+                        <button class="btn btn-warning" onclick="window.toggleSelectAll('student')">全选/取消全选</button>
+                        <button class="btn btn-danger" onclick="window.clearSelectedPoints()">积分清零（选中）</button>
                         <input type="text" id="studentSearch" class="search-box" placeholder="搜索学号或姓名">
                     </div>
                 </div>
                 <table>
                     <thead>
                         <tr>
-                            <th class="checkbox-col"><input type="checkbox" id="selectAllStudent" onclick="toggleAllCheckboxes('student')"></th>
+                            <th class="checkbox-col"><input type="checkbox" id="selectAllStudent" onclick="window.toggleAllCheckboxes('student')"></th>
                             <th>学号</th>
                             <th>姓名</th>
                             <th>班级</th>
@@ -254,15 +254,15 @@
                 <div class="card-header">
                     <h2>待审核申请</h2>
                     <div>
-                        <button class="btn btn-warning" onclick="toggleSelectAll('pending')">全选/取消全选</button>
-                        <button class="btn btn-success" onclick="batchReview('approved')">✅ 批量通过</button>
-                        <button class="btn btn-danger" onclick="batchReview('rejected')">❌ 批量拒绝</button>
+                        <button class="btn btn-warning" onclick="window.toggleSelectAll('pending')">全选/取消全选</button>
+                        <button class="btn btn-success" onclick="window.batchReview('approved')">✅ 批量通过</button>
+                        <button class="btn btn-danger" onclick="window.batchReview('rejected')">❌ 批量拒绝</button>
                     </div>
                 </div>
                 <table>
                     <thead>
                         <tr>
-                            <th class="checkbox-col"><input type="checkbox" id="selectAllPending" onclick="toggleAllCheckboxes('pending')"></th>
+                            <th class="checkbox-col"><input type="checkbox" id="selectAllPending" onclick="window.toggleAllCheckboxes('pending')"></th>
                             <th>学生</th>
                             <th>项目</th>
                             <th>类型</th>
@@ -346,51 +346,29 @@
     </div>
 
     <script>
-        (function() {
-            // ---------- Supabase 配置 ----------
-            const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // 所有函数直接定义在全局，不包在立即执行函数里
+        // ---------- Supabase 配置 ----------
+        const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            let isTeacherLoggedIn = false;
+        let isTeacherLoggedIn = false;
 
-            // ---------- 登录/登出 ----------
-            async function teacherLogin() {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('config')
-                        .select('admin_password')
-                        .eq('id', 1)
-                        .single();
-                    if (error || !data) throw error || new Error('无法验证');
-                    if (username === 'admin' && password === data.admin_password) {
-                        isTeacherLoggedIn = true;
-                        sessionStorage.setItem('teacherLoggedIn', 'true');
-                        document.getElementById('loginContainer').style.display = 'none';
-                        document.getElementById('mainContainer').style.display = 'block';
-                        loadRules();
-                        loadStudents();
-                        loadApplications();
-                        loadRank();
-                    } else {
-                        document.getElementById('loginError').innerText = '用户名或密码错误';
-                    }
-                } catch (err) {
-                    console.error('登录错误:', err);
-                    document.getElementById('loginError').innerText = '系统错误，请稍后重试';
-                }
-            }
-
-            function teacherLogout() {
-                sessionStorage.removeItem('teacherLoggedIn');
-                location.reload();
-            }
-
-            function checkTeacherLogin() {
-                if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
+        // ---------- 登录/登出（直接挂在 window 上）----------
+        window.teacherLogin = async function() {
+            console.log('登录函数被调用');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('config')
+                    .select('admin_password')
+                    .eq('id', 1)
+                    .single();
+                if (error || !data) throw error || new Error('无法验证');
+                if (username === 'admin' && password === data.admin_password) {
                     isTeacherLoggedIn = true;
+                    sessionStorage.setItem('teacherLoggedIn', 'true');
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('mainContainer').style.display = 'block';
                     loadRules();
@@ -398,331 +376,401 @@
                     loadApplications();
                     loadRank();
                 } else {
-                    document.getElementById('loginContainer').style.display = 'block';
-                    document.getElementById('mainContainer').style.display = 'none';
+                    document.getElementById('loginError').innerText = '用户名或密码错误';
                 }
+            } catch (err) {
+                console.error('登录错误:', err);
+                document.getElementById('loginError').innerText = '系统错误，请稍后重试';
             }
+        };
 
-            // ---------- 标签页切换 ----------
-            window.switchTab = function(tab) {
-                console.log('切换标签页:', tab);
-                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                document.getElementById(tab + 'Panel').classList.add('active');
-                document.querySelector(`.tab-btn[onclick*="'${tab}'"]`).classList.add('active');
-            };
+        window.teacherLogout = function() {
+            sessionStorage.removeItem('teacherLoggedIn');
+            location.reload();
+        };
 
-            // ---------- 规则管理 ----------
-            async function loadRules() {
-                console.log('加载规则列表');
-                try {
-                    const { data: rules, error } = await supabaseClient
-                        .from('point_rules')
-                        .select('*')
-                        .order('type')
-                        .order('id');
-                    if (error) throw error;
-                    const tbody = document.getElementById('rulesList');
-                    tbody.innerHTML = '';
-                    if (!rules || rules.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无规则</td></tr>';
-                        return;
-                    }
-                    rules.forEach(rule => {
-                        const tr = document.createElement('tr');
-                        const typeClass = rule.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
-                        const typeText = rule.type === 'add' ? '加分' : '扣分';
-                        tr.innerHTML = `
-                            <td><span class="${typeClass}">${typeText}</span></td>
-                            <td>${rule.name}</td>
-                            <td>${rule.description || '-'}</td>
-                            <td>${rule.points}</td>
-                            <td><span style="background:${rule.enabled ? '#d4edda' : '#f8d7da'}; color:${rule.enabled ? '#155724' : '#721c24'}; padding:4px 10px; border-radius:20px;">${rule.enabled ? '启用' : '禁用'}</span></td>
-                            <td>
-                                <button class="btn btn-success btn-sm" data-action="editRule" data-id="${rule.id}">编辑</button>
-                                <button class="btn btn-warning btn-sm" data-action="toggleRule" data-id="${rule.id}">${rule.enabled ? '禁用' : '启用'}</button>
-                                <button class="btn btn-danger btn-sm" data-action="deleteRule" data-id="${rule.id}">删除</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } catch (err) {
-                    console.error('加载规则失败:', err);
-                    alert('加载规则失败：' + err.message);
-                }
-            }
-
-            window.editRule = async function(id) {
-                console.log('编辑规则 ID:', id);
-                try {
-                    const { data: rule, error } = await supabaseClient
-                        .from('point_rules')
-                        .select('*')
-                        .eq('id', id)
-                        .single();
-                    if (error) throw error;
-                    document.getElementById('ruleModalTitle').innerText = '编辑规则';
-                    document.getElementById('ruleId').value = rule.id;
-                    document.getElementById('ruleType').value = rule.type;
-                    document.getElementById('ruleName').value = rule.name;
-                    document.getElementById('ruleDesc').value = rule.description || '';
-                    document.getElementById('rulePoints').value = rule.points;
-                    document.getElementById('ruleModal').style.display = 'flex';
-                } catch (err) {
-                    console.error('编辑规则失败:', err);
-                    alert('获取规则失败：' + err.message);
-                }
-            };
-
-            window.toggleRule = async function(id) {
-                console.log('切换规则状态 ID:', id);
-                try {
-                    const { data: rule, error } = await supabaseClient
-                        .from('point_rules')
-                        .select('enabled')
-                        .eq('id', id)
-                        .single();
-                    if (error) throw error;
-                    const { error: updateError } = await supabaseClient
-                        .from('point_rules')
-                        .update({ enabled: !rule.enabled })
-                        .eq('id', id);
-                    if (updateError) throw updateError;
-                    loadRules();
-                } catch (err) {
-                    console.error('切换状态失败:', err);
-                    alert('切换失败：' + err.message);
-                }
-            };
-
-            window.deleteRule = async function(id) {
-                console.log('删除规则 ID:', id);
-                if (!confirm('确定删除？')) return;
-                try {
-                    const { error } = await supabaseClient
-                        .from('point_rules')
-                        .delete()
-                        .eq('id', id);
-                    if (error) throw error;
-                    loadRules();
-                } catch (err) {
-                    console.error('删除失败:', err);
-                    alert('删除失败：' + err.message);
-                }
-            };
-
-            window.saveRule = async function() {
-                const id = document.getElementById('ruleId').value;
-                const type = document.getElementById('ruleType').value;
-                const name = document.getElementById('ruleName').value.trim();
-                const desc = document.getElementById('ruleDesc').value.trim();
-                const points = parseInt(document.getElementById('rulePoints').value);
-                if (!name || !points) {
-                    alert('请填写名称和分值');
-                    return;
-                }
-                const data = { type, name, description: desc, points, enabled: true };
-                try {
-                    if (id) {
-                        const { error } = await supabaseClient
-                            .from('point_rules')
-                            .update(data)
-                            .eq('id', id);
-                        if (error) throw error;
-                    } else {
-                        const { error } = await supabaseClient
-                            .from('point_rules')
-                            .insert([data]);
-                        if (error) throw error;
-                    }
-                    closeRuleModal();
-                    loadRules();
-                } catch (err) {
-                    console.error('保存规则失败:', err);
-                    alert('保存失败：' + err.message);
-                }
-            };
-
-            window.closeRuleModal = function() {
-                document.getElementById('ruleModal').style.display = 'none';
-            };
-
-            // ---------- 学生管理 ----------
-            async function loadStudents() {
-                console.log('加载学生列表');
-                try {
-                    const { data: students, error } = await supabaseClient
-                        .from('students')
-                        .select('*')
-                        .order('student_id');
-                    if (error) throw error;
-                    const tbody = document.getElementById('studentsList');
-                    tbody.innerHTML = '';
-                    students.forEach(s => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="checkbox-col"><input type="checkbox" class="student-checkbox" value="${s.id}"></td>
-                            <td>${s.student_id}</td>
-                            <td>${s.name}</td>
-                            <td>${s.class || '1班'}</td>
-                            <td>${s.total_points}</td>
-                            <td><button class="btn btn-success btn-sm" data-action="editStudent" data-id="${s.id}" data-name="${s.name}" data-class="${s.class || ''}">编辑</button></td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } catch (err) {
-                    console.error('加载学生失败:', err);
-                    alert('加载学生失败：' + err.message);
-                }
-            }
-
-            // ---------- 申请审核（带批量审核）----------
-            async function loadApplications() {
-                console.log('加载申请列表');
-                try {
-                    // 待审核
-                    const { data: pending, error: pendingError } = await supabaseClient
-                        .from('applications')
-                        .select('*, students(name, student_id), point_rules(name, points, type)')
-                        .eq('status', 'pending')
-                        .order('created_at');
-                    if (pendingError) throw pendingError;
-                    const pendingTbody = document.getElementById('pendingList');
-                    pendingTbody.innerHTML = '';
-                    if (pending && pending.length > 0) {
-                        pending.forEach(app => {
-                            const tr = document.createElement('tr');
-                            const typeClass = app.point_rules.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
-                            const typeText = app.point_rules.type === 'add' ? '加分' : '扣分';
-                            tr.innerHTML = `
-                                <td class="checkbox-col"><input type="checkbox" class="pending-checkbox" value="${app.id}"></td>
-                                <td>${app.students.name} (${app.students.student_id})</td>
-                                <td>${app.point_rules.name}</td>
-                                <td><span class="${typeClass}">${typeText}</span></td>
-                                <td>${app.custom_points || app.point_rules.points}</td>
-                                <td>${app.reason || ''}</td>
-                                <td>${new Date(app.created_at).toLocaleString()}</td>
-                                <td>
-                                    <button class="btn btn-success btn-sm" data-action="reviewApp" data-id="${app.id}" data-status="approved">通过</button>
-                                    <button class="btn btn-danger btn-sm" data-action="reviewApp" data-id="${app.id}" data-status="rejected">拒绝</button>
-                                </td>
-                            `;
-                            pendingTbody.appendChild(tr);
-                        });
-                    } else {
-                        pendingTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无待审核申请</td></tr>';
-                    }
-
-                    // 已审核
-                    const { data: history, error: historyError } = await supabaseClient
-                        .from('applications')
-                        .select('*, students(name, student_id), point_rules(name, points, type)')
-                        .neq('status', 'pending')
-                        .order('reviewed_at', { ascending: false });
-                    if (historyError) throw historyError;
-                    const historyTbody = document.getElementById('historyList');
-                    historyTbody.innerHTML = '';
-                    if (history && history.length > 0) {
-                        history.forEach(app => {
-                            const tr = document.createElement('tr');
-                            const statusClass = `status-${app.status}`;
-                            const statusText = app.status === 'approved' ? '已通过' : '已拒绝';
-                            const typeClass = app.point_rules?.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
-                            const typeText = app.point_rules?.type === 'add' ? '加分' : '扣分';
-                            tr.innerHTML = `
-                                <td>${app.students.name} (${app.students.student_id})</td>
-                                <td>${app.point_rules?.name || '已删除规则'}</td>
-                                <td><span class="${typeClass}">${typeText}</span></td>
-                                <td>${app.custom_points || app.point_rules?.points || ''}</td>
-                                <td>${app.reason || ''}</td>
-                                <td><span class="${statusClass}">${statusText}</span></td>
-                                <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
-                                <td>
-                                    <button class="btn btn-danger btn-sm" data-action="deleteHistory" data-id="${app.id}">删除</button>
-                                </td>
-                            `;
-                            historyTbody.appendChild(tr);
-                        });
-                    } else {
-                        historyTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无已审核记录</td></tr>';
-                    }
-                } catch (err) {
-                    console.error('加载申请失败:', err);
-                    alert('加载申请失败：' + err.message);
-                }
-            }
-
-            // 批量审核函数
-            window.batchReview = async function(status) {
-                const checkboxes = document.querySelectorAll('.pending-checkbox:checked');
-                if (checkboxes.length === 0) {
-                    alert('请至少选择一个申请');
-                    return;
-                }
-
-                const statusText = status === 'approved' ? '通过' : '拒绝';
-                if (!confirm(`确定要批量${statusText}选中的 ${checkboxes.length} 个申请吗？`)) return;
-
-                const ids = Array.from(checkboxes).map(cb => cb.value);
-                let successCount = 0;
-                let failCount = 0;
-                let failMessages = [];
-
-                for (const id of ids) {
-                    try {
-                        // 更新申请状态
-                        const { error: updateError } = await supabaseClient
-                            .from('applications')
-                            .update({ status, reviewed_at: new Date() })
-                            .eq('id', id);
-                        if (updateError) throw updateError;
-
-                        // 如果是通过，需要增加/扣除积分
-                        if (status === 'approved') {
-                            const { data: app, error: fetchError } = await supabaseClient
-                                .from('applications')
-                                .select('student_id, custom_points, point_rules(points, type)')
-                                .eq('id', id)
-                                .single();
-                            if (fetchError) throw fetchError;
-
-                            const points = app.custom_points || app.point_rules?.points;
-                            if (!points) throw new Error('无法确定分值');
-
-                            const pointValue = app.point_rules.type === 'add' ? points : -points;
-
-                            const { error: rpcError } = await supabaseClient
-                                .rpc('increment_student_points', {
-                                    student_id: app.student_id,
-                                    points: pointValue
-                                });
-                            if (rpcError) throw rpcError;
-                        }
-                        successCount++;
-                    } catch (err) {
-                        failCount++;
-                        failMessages.push(`ID ${id}: ${err.message}`);
-                    }
-                }
-
-                let message = `批量处理完成：${successCount} 个成功`;
-                if (failCount > 0) {
-                    message += `，${failCount} 个失败\n失败详情：\n${failMessages.join('\n')}`;
-                }
-                alert(message);
-
-                // 刷新数据
+        function checkTeacherLogin() {
+            if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
+                isTeacherLoggedIn = true;
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                loadRules();
+                loadStudents();
                 loadApplications();
                 loadRank();
+            } else {
+                document.getElementById('loginContainer').style.display = 'block';
+                document.getElementById('mainContainer').style.display = 'none';
+            }
+        }
 
-                // 取消全选
-                const selectAll = document.getElementById('selectAllPending');
-                if (selectAll) selectAll.checked = false;
-            };
+        // ---------- 标签页切换 ----------
+        window.switchTab = function(tab) {
+            console.log('切换标签页:', tab);
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tab + 'Panel').classList.add('active');
+            document.querySelector(`.tab-btn[onclick*="'${tab}'"]`).classList.add('active');
+        };
 
-            // 单个审核
-            window.reviewApplication = async function(id, status) {
-                console.log('审核申请:', id, status);
+        // ---------- 规则管理 ----------
+        async function loadRules() {
+            console.log('加载规则列表');
+            try {
+                const { data: rules, error } = await supabaseClient
+                    .from('point_rules')
+                    .select('*')
+                    .order('type')
+                    .order('id');
+                if (error) throw error;
+                const tbody = document.getElementById('rulesList');
+                tbody.innerHTML = '';
+                if (!rules || rules.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无规则</td></tr>';
+                    return;
+                }
+                rules.forEach(rule => {
+                    const tr = document.createElement('tr');
+                    const typeClass = rule.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
+                    const typeText = rule.type === 'add' ? '加分' : '扣分';
+                    tr.innerHTML = `
+                        <td><span class="${typeClass}">${typeText}</span></td>
+                        <td>${rule.name}</td>
+                        <td>${rule.description || '-'}</td>
+                        <td>${rule.points}</td>
+                        <td><span style="background:${rule.enabled ? '#d4edda' : '#f8d7da'}; color:${rule.enabled ? '#155724' : '#721c24'}; padding:4px 10px; border-radius:20px;">${rule.enabled ? '启用' : '禁用'}</span></td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="window.editRule(${rule.id})">编辑</button>
+                            <button class="btn btn-warning btn-sm" onclick="window.toggleRule(${rule.id})">${rule.enabled ? '禁用' : '启用'}</button>
+                            <button class="btn btn-danger btn-sm" onclick="window.deleteRule(${rule.id})">删除</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载规则失败:', err);
+                alert('加载规则失败：' + err.message);
+            }
+        }
+
+        window.editRule = async function(id) {
+            console.log('编辑规则 ID:', id);
+            try {
+                const { data: rule, error } = await supabaseClient
+                    .from('point_rules')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+                document.getElementById('ruleModalTitle').innerText = '编辑规则';
+                document.getElementById('ruleId').value = rule.id;
+                document.getElementById('ruleType').value = rule.type;
+                document.getElementById('ruleName').value = rule.name;
+                document.getElementById('ruleDesc').value = rule.description || '';
+                document.getElementById('rulePoints').value = rule.points;
+                document.getElementById('ruleModal').style.display = 'flex';
+            } catch (err) {
+                console.error('编辑规则失败:', err);
+                alert('获取规则失败：' + err.message);
+            }
+        };
+
+        window.toggleRule = async function(id) {
+            console.log('切换规则状态 ID:', id);
+            try {
+                const { data: rule, error } = await supabaseClient
+                    .from('point_rules')
+                    .select('enabled')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+                const { error: updateError } = await supabaseClient
+                    .from('point_rules')
+                    .update({ enabled: !rule.enabled })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+                loadRules();
+            } catch (err) {
+                console.error('切换状态失败:', err);
+                alert('切换失败：' + err.message);
+            }
+        };
+
+        window.deleteRule = async function(id) {
+            console.log('删除规则 ID:', id);
+            if (!confirm('确定删除？')) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('point_rules')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                loadRules();
+            } catch (err) {
+                console.error('删除失败:', err);
+                alert('删除失败：' + err.message);
+            }
+        };
+
+        window.saveRule = async function() {
+            const id = document.getElementById('ruleId').value;
+            const type = document.getElementById('ruleType').value;
+            const name = document.getElementById('ruleName').value.trim();
+            const desc = document.getElementById('ruleDesc').value.trim();
+            const points = parseInt(document.getElementById('rulePoints').value);
+            if (!name || !points) {
+                alert('请填写名称和分值');
+                return;
+            }
+            const data = { type, name, description: desc, points, enabled: true };
+            try {
+                if (id) {
+                    const { error } = await supabaseClient
+                        .from('point_rules')
+                        .update(data)
+                        .eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient
+                        .from('point_rules')
+                        .insert([data]);
+                    if (error) throw error;
+                }
+                closeRuleModal();
+                loadRules();
+            } catch (err) {
+                console.error('保存规则失败:', err);
+                alert('保存失败：' + err.message);
+            }
+        };
+
+        window.closeRuleModal = function() {
+            document.getElementById('ruleModal').style.display = 'none';
+        };
+
+        // ---------- 学生管理 ----------
+        async function loadStudents() {
+            console.log('加载学生列表');
+            try {
+                const { data: students, error } = await supabaseClient
+                    .from('students')
+                    .select('*')
+                    .order('student_id');
+                if (error) throw error;
+                const tbody = document.getElementById('studentsList');
+                tbody.innerHTML = '';
+                students.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="checkbox-col"><input type="checkbox" class="student-checkbox" value="${s.id}"></td>
+                        <td>${s.student_id}</td>
+                        <td>${s.name}</td>
+                        <td>${s.class || '1班'}</td>
+                        <td>${s.total_points}</td>
+                        <td><button class="btn btn-success btn-sm" onclick="window.editStudent('${s.id}', '${s.name}', '${s.class || ''}')">编辑</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载学生失败:', err);
+                alert('加载学生失败：' + err.message);
+            }
+        }
+
+        window.toggleSelectAll = function(type) {
+            let checkboxes, selectAll;
+            if (type === 'student') {
+                checkboxes = document.querySelectorAll('.student-checkbox');
+                selectAll = document.getElementById('selectAllStudent');
+            } else if (type === 'pending') {
+                checkboxes = document.querySelectorAll('.pending-checkbox');
+                selectAll = document.getElementById('selectAllPending');
+            } else {
+                return;
+            }
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            if (selectAll) selectAll.checked = !allChecked;
+        };
+
+        window.toggleAllCheckboxes = function(type) {
+            let checkboxes, selectAll;
+            if (type === 'student') {
+                checkboxes = document.querySelectorAll('.student-checkbox');
+                selectAll = document.getElementById('selectAllStudent');
+            } else if (type === 'pending') {
+                checkboxes = document.querySelectorAll('.pending-checkbox');
+                selectAll = document.getElementById('selectAllPending');
+            } else {
+                return;
+            }
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        };
+
+        window.clearSelectedPoints = async function() {
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请至少选择一个学生');
+                return;
+            }
+            if (!confirm(`确定要将选中的 ${checkboxes.length} 名学生的积分清零吗？`)) return;
+
+            const studentIds = Array.from(checkboxes).map(cb => cb.value);
+            try {
+                for (const id of studentIds) {
+                    const { error } = await supabaseClient
+                        .from('students')
+                        .update({ total_points: 0 })
+                        .eq('id', id);
+                    if (error) throw error;
+                }
+                alert('积分清零成功');
+                loadStudents();
+                loadRank();
+            } catch (err) {
+                console.error('积分清零失败:', err);
+                alert('积分清零失败：' + err.message);
+            }
+        };
+
+        window.editStudent = function(id, name, className) {
+            console.log('编辑学生:', id, name, className);
+            document.getElementById('editStudentId').value = id;
+            document.getElementById('editStudentName').value = name;
+            document.getElementById('editStudentClass').value = className;
+            document.getElementById('editStudentPoints').value = 0;
+            document.getElementById('studentModal').style.display = 'flex';
+        };
+
+        window.closeStudentModal = function() {
+            document.getElementById('studentModal').style.display = 'none';
+        };
+
+        window.saveStudent = async function() {
+            const id = document.getElementById('editStudentId').value;
+            const name = document.getElementById('editStudentName').value.trim();
+            const className = document.getElementById('editStudentClass').value.trim();
+            const pointsAdjust = parseInt(document.getElementById('editStudentPoints').value) || 0;
+
+            if (!name) {
+                alert('姓名不能为空');
+                return;
+            }
+            try {
+                const { error: updateError } = await supabaseClient
+                    .from('students')
+                    .update({ name, class: className })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+
+                if (pointsAdjust !== 0) {
+                    const { error: rpcError } = await supabaseClient
+                        .rpc('increment_student_points', { student_id: id, points: pointsAdjust });
+                    if (rpcError) throw rpcError;
+                }
+
+                closeStudentModal();
+                loadStudents();
+                loadRank();
+            } catch (err) {
+                console.error('保存学生失败:', err);
+                alert('保存失败：' + err.message);
+            }
+        };
+
+        // ---------- 申请审核 ----------
+        async function loadApplications() {
+            console.log('加载申请列表');
+            try {
+                // 待审核
+                const { data: pending, error: pendingError } = await supabaseClient
+                    .from('applications')
+                    .select('*, students(name, student_id), point_rules(name, points, type)')
+                    .eq('status', 'pending')
+                    .order('created_at');
+                if (pendingError) throw pendingError;
+                const pendingTbody = document.getElementById('pendingList');
+                pendingTbody.innerHTML = '';
+                if (pending && pending.length > 0) {
+                    pending.forEach(app => {
+                        const tr = document.createElement('tr');
+                        const typeClass = app.point_rules.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
+                        const typeText = app.point_rules.type === 'add' ? '加分' : '扣分';
+                        tr.innerHTML = `
+                            <td class="checkbox-col"><input type="checkbox" class="pending-checkbox" value="${app.id}"></td>
+                            <td>${app.students.name} (${app.students.student_id})</td>
+                            <td>${app.point_rules.name}</td>
+                            <td><span class="${typeClass}">${typeText}</span></td>
+                            <td>${app.custom_points || app.point_rules.points}</td>
+                            <td>${app.reason || ''}</td>
+                            <td>${new Date(app.created_at).toLocaleString()}</td>
+                            <td>
+                                <button class="btn btn-success btn-sm" onclick="window.reviewApplication(${app.id}, 'approved')">通过</button>
+                                <button class="btn btn-danger btn-sm" onclick="window.reviewApplication(${app.id}, 'rejected')">拒绝</button>
+                            </td>
+                        `;
+                        pendingTbody.appendChild(tr);
+                    });
+                } else {
+                    pendingTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无待审核申请</td></tr>';
+                }
+
+                // 已审核
+                const { data: history, error: historyError } = await supabaseClient
+                    .from('applications')
+                    .select('*, students(name, student_id), point_rules(name, points, type)')
+                    .neq('status', 'pending')
+                    .order('reviewed_at', { ascending: false });
+                if (historyError) throw historyError;
+                const historyTbody = document.getElementById('historyList');
+                historyTbody.innerHTML = '';
+                if (history && history.length > 0) {
+                    history.forEach(app => {
+                        const tr = document.createElement('tr');
+                        const statusClass = `status-${app.status}`;
+                        const statusText = app.status === 'approved' ? '已通过' : '已拒绝';
+                        const typeClass = app.point_rules?.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
+                        const typeText = app.point_rules?.type === 'add' ? '加分' : '扣分';
+                        tr.innerHTML = `
+                            <td>${app.students.name} (${app.students.student_id})</td>
+                            <td>${app.point_rules?.name || '已删除规则'}</td>
+                            <td><span class="${typeClass}">${typeText}</span></td>
+                            <td>${app.custom_points || app.point_rules?.points || ''}</td>
+                            <td>${app.reason || ''}</td>
+                            <td><span class="${statusClass}">${statusText}</span></td>
+                            <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="window.deleteHistory(${app.id})">删除</button>
+                            </td>
+                        `;
+                        historyTbody.appendChild(tr);
+                    });
+                } else {
+                    historyTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">暂无已审核记录</td></tr>';
+                }
+            } catch (err) {
+                console.error('加载申请失败:', err);
+                alert('加载申请失败：' + err.message);
+            }
+        }
+
+        // 批量审核
+        window.batchReview = async function(status) {
+            const checkboxes = document.querySelectorAll('.pending-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请至少选择一个申请');
+                return;
+            }
+
+            const statusText = status === 'approved' ? '通过' : '拒绝';
+            if (!confirm(`确定要批量${statusText}选中的 ${checkboxes.length} 个申请吗？`)) return;
+
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            let successCount = 0;
+            let failCount = 0;
+            let failMessages = [];
+
+            for (const id of ids) {
                 try {
                     const { error: updateError } = await supabaseClient
                         .from('applications')
@@ -750,135 +798,90 @@
                             });
                         if (rpcError) throw rpcError;
                     }
-
-                    loadApplications();
-                    loadRank();
+                    successCount++;
                 } catch (err) {
-                    console.error('审核失败:', err);
-                    alert('审核失败：' + err.message);
+                    failCount++;
+                    failMessages.push(`ID ${id}: ${err.message}`);
                 }
-            };
+            }
 
-            window.deleteHistory = async function(id) {
-                console.log('删除已审核记录 ID:', id);
-                if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
-                try {
-                    const { error } = await supabaseClient
+            let message = `批量处理完成：${successCount} 个成功`;
+            if (failCount > 0) {
+                message += `，${failCount} 个失败\n失败详情：\n${failMessages.join('\n')}`;
+            }
+            alert(message);
+
+            loadApplications();
+            loadRank();
+
+            const selectAll = document.getElementById('selectAllPending');
+            if (selectAll) selectAll.checked = false;
+        };
+
+        window.reviewApplication = async function(id, status) {
+            console.log('审核申请:', id, status);
+            try {
+                const { error: updateError } = await supabaseClient
+                    .from('applications')
+                    .update({ status, reviewed_at: new Date() })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+
+                if (status === 'approved') {
+                    const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
-                        .delete()
-                        .eq('id', id);
-                    if (error) throw error;
-                    loadApplications();
-                } catch (err) {
-                    console.error('删除失败:', err);
-                    alert('删除失败：' + err.message);
+                        .select('student_id, custom_points, point_rules(points, type)')
+                        .eq('id', id)
+                        .single();
+                    if (fetchError) throw fetchError;
+
+                    const points = app.custom_points || app.point_rules?.points;
+                    if (!points) throw new Error('无法确定分值');
+
+                    const pointValue = app.point_rules.type === 'add' ? points : -points;
+
+                    const { error: rpcError } = await supabaseClient
+                        .rpc('increment_student_points', {
+                            student_id: app.student_id,
+                            points: pointValue
+                        });
+                    if (rpcError) throw rpcError;
                 }
-            };
 
-            // ---------- 全选/取消全选通用函数 ----------
-            window.toggleSelectAll = function(type) {
-                let checkboxes, selectAll;
-                if (type === 'student') {
-                    checkboxes = document.querySelectorAll('.student-checkbox');
-                    selectAll = document.getElementById('selectAllStudent');
-                } else if (type === 'pending') {
-                    checkboxes = document.querySelectorAll('.pending-checkbox');
-                    selectAll = document.getElementById('selectAllPending');
-                } else {
-                    return;
-                }
-                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-                checkboxes.forEach(cb => cb.checked = !allChecked);
-                if (selectAll) selectAll.checked = !allChecked;
-            };
+                loadApplications();
+                loadRank();
+            } catch (err) {
+                console.error('审核失败:', err);
+                alert('审核失败：' + err.message);
+            }
+        };
 
-            window.toggleAllCheckboxes = function(type) {
-                let checkboxes, selectAll;
-                if (type === 'student') {
-                    checkboxes = document.querySelectorAll('.student-checkbox');
-                    selectAll = document.getElementById('selectAllStudent');
-                } else if (type === 'pending') {
-                    checkboxes = document.querySelectorAll('.pending-checkbox');
-                    selectAll = document.getElementById('selectAllPending');
-                } else {
-                    return;
-                }
-                checkboxes.forEach(cb => cb.checked = selectAll.checked);
-            };
+        window.deleteHistory = async function(id) {
+            console.log('删除已审核记录 ID:', id);
+            if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('applications')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                loadApplications();
+            } catch (err) {
+                console.error('删除失败:', err);
+                alert('删除失败：' + err.message);
+            }
+        };
 
-            window.clearSelectedPoints = async function() {
-                const checkboxes = document.querySelectorAll('.student-checkbox:checked');
-                if (checkboxes.length === 0) {
-                    alert('请至少选择一个学生');
-                    return;
-                }
-                if (!confirm(`确定要将选中的 ${checkboxes.length} 名学生的积分清零吗？`)) return;
-
-                const studentIds = Array.from(checkboxes).map(cb => cb.value);
-                try {
-                    for (const id of studentIds) {
-                        const { error } = await supabaseClient
-                            .from('students')
-                            .update({ total_points: 0 })
-                            .eq('id', id);
-                        if (error) throw error;
-                    }
-                    alert('积分清零成功');
-                    loadStudents();
-                    loadRank();
-                } catch (err) {
-                    console.error('积分清零失败:', err);
-                    alert('积分清零失败：' + err.message);
-                }
-            };
-
-            window.editStudent = function(id, name, className) {
-                console.log('编辑学生:', id, name, className);
-                document.getElementById('editStudentId').value = id;
-                document.getElementById('editStudentName').value = name;
-                document.getElementById('editStudentClass').value = className;
-                document.getElementById('editStudentPoints').value = 0;
-                document.getElementById('studentModal').style.display = 'flex';
-            };
-
-            window.closeStudentModal = function() {
-                document.getElementById('studentModal').style.display = 'none';
-            };
-
-            window.saveStudent = async function() {
-                const id = document.getElementById('editStudentId').value;
-                const name = document.getElementById('editStudentName').value.trim();
-                const className = document.getElementById('editStudentClass').value.trim();
-                const pointsAdjust = parseInt(document.getElementById('editStudentPoints').value) || 0;
-
-                if (!name) {
-                    alert('姓名不能为空');
-                    return;
-                }
-                try {
-                    const { error: updateError } = await supabaseClient
-                        .from('students')
-                        .update({ name, class: className })
-                        .eq('id', id);
-                    if (updateError) throw updateError;
-
-                    if (pointsAdjust !== 0) {
-                        const { error: rpcError } = await supabaseClient
-                            .rpc('increment_student_points', { student_id: id, points: pointsAdjust });
-                        if (rpcError) throw rpcError;
-                    }
-
-                    closeStudentModal();
-                    loadStudents();
-                    loadRank();
-                } catch (err) {
-                    console.error('保存学生失败:', err);
-                    alert('保存失败：' + err.message);
-                }
-            };
-
-            // ---------- 积分排名 ----------
-            async function loadRank() {
-                console.log('加载积分排名');
-                try {
-                    const { data: students,
+        // ---------- 积分排名 ----------
+        async function loadRank() {
+            console.log('加载积分排名');
+            try {
+                const { data: students, error } = await supabaseClient
+                    .from('students')
+                    .select('student_id, name, class, total_points')
+                    .order('total_points', { ascending: false });
+                if (error) throw error;
+                const tbody = document.getElementById('rankList');
+                tbody.innerHTML = '';
+                students.forEach((s, idx) => {
+                    const tr
