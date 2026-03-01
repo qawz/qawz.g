@@ -7,7 +7,7 @@
     <meta name="description" content="教师可管理加分/扣分规则、审核学生申请、查看积分排名，支持批量操作和积分清零。">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 样式与之前相同，为节省篇幅此处省略，请保留你已有的完整样式 */
+        /* 样式保持不变，与之前相同，为节省篇幅此处省略，请保留原有样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -176,6 +176,7 @@
     </style>
 </head>
 <body>
+    <!-- 登录部分与之前相同，此处省略，但实际使用时请保留完整的HTML结构 -->
     <div id="loginContainer" class="login-container">
         <h2>教师登录</h2>
         <input type="text" id="username" placeholder="用户名" value="admin">
@@ -254,7 +255,7 @@
             </div>
         </div>
 
-        <!-- 申请审核（带批量审核功能） -->
+        <!-- 申请审核 -->
         <div id="applicationsPanel" class="panel">
             <div class="card">
                 <div class="card-header">
@@ -432,7 +433,6 @@
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tab + 'Panel').classList.add('active');
             
-            // 激活对应的标签按钮
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tab}'`)) {
                     btn.classList.add('active');
@@ -442,26 +442,20 @@
 
         // ========== 规则管理 ==========
         async function loadRules() {
-            console.log('加载规则列表');
             const tbody = document.getElementById('rulesList');
             if (!tbody) return;
-            
             try {
                 const { data: rules, error } = await supabaseClient
                     .from('point_rules')
                     .select('*')
                     .order('type')
                     .order('id');
-                
                 if (error) throw error;
-                
                 tbody.innerHTML = '';
-                
                 if (!rules || rules.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无规则，请先创建</td></tr>';
                     return;
                 }
-                
                 rules.forEach(rule => {
                     const tr = document.createElement('tr');
                     const typeClass = rule.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
@@ -494,7 +488,6 @@
                     .eq('id', id)
                     .single();
                 if (error) throw error;
-                
                 document.getElementById('ruleModalTitle').innerText = '编辑规则';
                 document.getElementById('ruleId').value = rule.id;
                 document.getElementById('ruleType').value = rule.type;
@@ -515,13 +508,11 @@
                     .eq('id', id)
                     .single();
                 if (error) throw error;
-                
                 const { error: updateError } = await supabaseClient
                     .from('point_rules')
                     .update({ enabled: !rule.enabled })
                     .eq('id', id);
                 if (updateError) throw updateError;
-                
                 loadRules();
             } catch (err) {
                 alert('切换失败：' + err.message);
@@ -548,14 +539,11 @@
             const name = document.getElementById('ruleName').value.trim();
             const desc = document.getElementById('ruleDesc').value.trim();
             const points = parseInt(document.getElementById('rulePoints').value);
-            
             if (!name || !points) {
                 alert('请填写名称和分值');
                 return;
             }
-            
             const data = { type, name, description: desc, points, enabled: true };
-            
             try {
                 if (id) {
                     const { error } = await supabaseClient
@@ -582,25 +570,19 @@
 
         // ========== 学生管理 ==========
         async function loadStudents() {
-            console.log('加载学生列表');
             const tbody = document.getElementById('studentsList');
             if (!tbody) return;
-            
             try {
                 const { data: students, error } = await supabaseClient
                     .from('students')
                     .select('*')
                     .order('student_id');
-                
                 if (error) throw error;
-                
                 tbody.innerHTML = '';
-                
                 if (!students || students.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无学生数据</td></tr>';
                     return;
                 }
-                
                 students.forEach(s => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -659,7 +641,6 @@
 
             const studentIds = Array.from(checkboxes).map(cb => cb.value);
             let successCount = 0;
-            
             for (const id of studentIds) {
                 try {
                     const { error } = await supabaseClient
@@ -672,7 +653,6 @@
                     console.error('清零失败:', err);
                 }
             }
-            
             alert(`积分清零完成：${successCount} 个成功`);
             loadStudents();
             loadRank();
@@ -700,7 +680,6 @@
                 alert('姓名不能为空');
                 return;
             }
-            
             try {
                 const { error: updateError } = await supabaseClient
                     .from('students')
@@ -722,25 +701,28 @@
             }
         }
 
-        // ========== 申请审核 ==========
+        // ========== 申请审核（修复 ambiguous 错误）==========
         async function loadApplications() {
-            console.log('加载申请列表');
             const pendingTbody = document.getElementById('pendingList');
             const historyTbody = document.getElementById('historyList');
-            
             try {
                 // 待审核
                 const { data: pending, error: pendingError } = await supabaseClient
                     .from('applications')
-                    .select('*, students(name, student_id), point_rules(name, points, type)')
+                    .select(`
+                        id,
+                        custom_points,
+                        reason,
+                        status,
+                        created_at,
+                        students!applications_student_id_fkey (name, student_id),
+                        point_rules!applications_rule_id_fkey (name, points, type)
+                    `)
                     .eq('status', 'pending')
                     .order('created_at');
-                
                 if (pendingError) throw pendingError;
-                
                 if (pendingTbody) {
                     pendingTbody.innerHTML = '';
-                    
                     if (pending && pending.length > 0) {
                         pending.forEach(app => {
                             const tr = document.createElement('tr');
@@ -769,15 +751,20 @@
                 // 已审核
                 const { data: history, error: historyError } = await supabaseClient
                     .from('applications')
-                    .select('*, students(name, student_id), point_rules(name, points, type)')
+                    .select(`
+                        id,
+                        custom_points,
+                        reason,
+                        status,
+                        reviewed_at,
+                        students!applications_student_id_fkey (name, student_id),
+                        point_rules!applications_rule_id_fkey (name, points, type)
+                    `)
                     .neq('status', 'pending')
                     .order('reviewed_at', { ascending: false });
-                
                 if (historyError) throw historyError;
-                
                 if (historyTbody) {
                     historyTbody.innerHTML = '';
-                    
                     if (history && history.length > 0) {
                         history.forEach(app => {
                             const tr = document.createElement('tr');
@@ -817,7 +804,6 @@
                 alert('请至少选择一个申请');
                 return;
             }
-
             const statusText = status === 'approved' ? '通过' : '拒绝';
             if (!confirm(`确定要批量${statusText}选中的 ${checkboxes.length} 个申请吗？`)) return;
 
@@ -836,20 +822,19 @@
 
                     // 如果是通过，调整积分
                     if (status === 'approved') {
-                        // 获取申请详情（明确选择需要的字段，避免歧义）
+                        // 使用明确的 foreign key 语法获取关联数据
                         const { data: app, error: fetchError } = await supabaseClient
                             .from('applications')
                             .select(`
                                 student_id,
                                 custom_points,
-                                point_rules (
+                                point_rules!applications_rule_id_fkey (
                                     points,
                                     type
                                 )
                             `)
                             .eq('id', id)
                             .single();
-                        
                         if (fetchError) throw fetchError;
                         if (!app) throw new Error('未找到申请记录');
 
@@ -884,29 +869,25 @@
         async function reviewApplication(id, status) {
             console.log('单个审核:', id, status);
             try {
-                // 更新申请状态
                 const { error: updateError } = await supabaseClient
                     .from('applications')
                     .update({ status, reviewed_at: new Date() })
                     .eq('id', id);
                 if (updateError) throw updateError;
 
-                // 如果是通过，调整积分
                 if (status === 'approved') {
-                    // 获取申请详情（明确选择需要的字段，避免歧义）
                     const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
                         .select(`
                             student_id,
                             custom_points,
-                            point_rules (
+                            point_rules!applications_rule_id_fkey (
                                 points,
                                 type
                             )
                         `)
                         .eq('id', id)
                         .single();
-                    
                     if (fetchError) throw fetchError;
                     if (!app) throw new Error('未找到申请记录');
 
@@ -948,20 +929,15 @@
 
         // ========== 积分排名 ==========
         async function loadRank() {
-            console.log('加载积分排名');
             const tbody = document.getElementById('rankList');
             if (!tbody) return;
-            
             try {
                 const { data: students, error } = await supabaseClient
                     .from('students')
                     .select('student_id, name, class, total_points')
                     .order('total_points', { ascending: false });
-                
                 if (error) throw error;
-                
                 tbody.innerHTML = '';
-                
                 students.forEach((s, idx) => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `<td>${idx+1}</td><td>${s.student_id}</td><td>${s.name}</td><td>${s.class || '1班'}</td><td>${s.total_points}</td>`;
