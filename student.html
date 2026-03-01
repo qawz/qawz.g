@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>学生积分系统 · 申请加分 · 班级榜</title>
+    <title>班级优化大师 · 学生端</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,6 +45,11 @@
             margin-top: 10px;
         }
         .login-container button:hover { background: #5a67d8; }
+        .guest-btn {
+            background: #48bb78 !important;
+            margin-top: 15px;
+        }
+        .guest-btn:hover { background: #38a169 !important; }
         .login-container .error { color: red; margin-top: 10px; }
         .main-container {
             max-width: 1300px;
@@ -156,37 +161,8 @@
         .status-pending { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 20px; }
         .status-approved { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; }
         .status-rejected { background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 20px; }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            width: 400px;
-            max-width: 90%;
-        }
-        .modal-content select,
-        .modal-content input,
-        .modal-content textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-        /* 班级榜卡片样式 */
+
+        /* 班级榜九宫格 */
         .class-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -210,14 +186,16 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: #667eea;
-            color: white;
+            background: white;
+            color: #333;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2rem;
             font-weight: bold;
             margin: 0 auto 15px;
+            border: 2px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .student-name {
             font-size: 1.2rem;
@@ -234,18 +212,80 @@
             color: #667eea;
             font-weight: bold;
         }
+
+        /* 加分弹窗九宫格 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 400px;
+            max-width: 90%;
+        }
+        .modal-content h3 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .rule-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .rule-grid-item {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .rule-grid-item:hover {
+            background: #5a67d8;
+        }
+        .rule-grid-item .points-badge-small {
+            display: inline-block;
+            background: rgba(255,255,255,0.3);
+            border-radius: 12px;
+            padding: 2px 8px;
+            margin-left: 5px;
+            font-size: 0.8rem;
+        }
+        .close-btn {
+            width: 100%;
+            padding: 12px;
+            background: #e2e8f0;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .close-btn:hover { background: #cbd5e0; }
     </style>
 </head>
 <body>
-    <!-- 登录界面 -->
+    <!-- 登录界面（两个选项） -->
     <div id="loginContainer" class="login-container">
-        <h2>学生登录</h2>
-        <input type="number" id="studentIdInput" placeholder="请输入学号 (1-45)" min="1" max="45">
-        <button onclick="login()">进入系统</button>
+        <h2>班级优化大师</h2>
+        <input type="number" id="studentIdInput" placeholder="学号 (1-45)" min="1" max="45">
+        <button onclick="login()">学生登录</button>
+        <button class="guest-btn" onclick="enterClassBoard()">👥 班级榜（直接加分）</button>
         <p id="loginError" class="error"></p>
     </div>
 
-    <!-- 主界面 -->
+    <!-- 登录后主界面（我的积分） -->
     <div id="mainContainer" class="main-container">
         <div class="header">
             <h1>🎓 学生积分系统</h1>
@@ -253,20 +293,15 @@
                 <a href="#" onclick="logout()">退出登录</a>
             </div>
         </div>
-
-        <!-- 标签页切换 -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('my')">📋 我的积分</button>
             <button class="tab-btn" onclick="switchTab('class')">👥 班级榜</button>
         </div>
-
         <!-- 我的积分面板 -->
         <div id="myPanel" class="panel active">
             <div id="studentInfo" class="student-info"></div>
-
             <h2>📋 可申请加分项目</h2>
             <div id="rulesList" class="rules-grid"></div>
-
             <h2>📝 我的申请记录</h2>
             <table>
                 <thead>
@@ -275,27 +310,30 @@
                 <tbody id="applicationsList"></tbody>
             </table>
         </div>
-
-        <!-- 班级榜面板 -->
+        <!-- 班级榜面板（登录后也可见） -->
         <div id="classPanel" class="panel">
             <h2>👥 班级积分榜</h2>
-            <div id="classGrid" class="class-grid"></div>
+            <div id="classGridLogged" class="class-grid"></div>
         </div>
     </div>
 
-    <!-- 申请模态框（通用） -->
+    <!-- 班级榜独立界面（不登录直接进入） -->
+    <div id="classBoardContainer" class="main-container" style="display:none;">
+        <div class="header">
+            <h1>👥 班级榜 · 点击卡片加分</h1>
+            <div class="nav">
+                <a href="#" onclick="backToLogin()">返回登录</a>
+            </div>
+        </div>
+        <div id="classBoardGrid" class="class-grid"></div>
+    </div>
+
+    <!-- 加分弹窗（九宫格） -->
     <div id="applyModal" class="modal">
         <div class="modal-content">
-            <h3 id="applyModalTitle">提交加分申请</h3>
-            <input type="hidden" id="targetStudentId">
-            <div id="targetStudentName" style="margin-bottom:15px; font-weight:bold;"></div>
-            <select id="ruleSelect"></select>
-            <input type="number" id="customPoints" placeholder="自定义分值（留空则使用默认）">
-            <textarea id="applyReason" rows="3" placeholder="申请理由（选填）"></textarea>
-            <div class="modal-buttons">
-                <button class="btn" onclick="closeApplyModal()">取消</button>
-                <button class="btn" style="background:#667eea; color:white;" onclick="submitApplication()">提交</button>
-            </div>
+            <h3 id="modalTitle">选择加分项</h3>
+            <div id="ruleGrid" class="rule-grid"></div>
+            <button class="close-btn" onclick="closeModal()">取消</button>
         </div>
     </div>
 
@@ -305,10 +343,11 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let currentStudent = null; // 当前登录学生
-        let selectedRuleId = null;  // 当前选中的规则（为自己申请时使用）
+        let currentStudent = null;          // 登录后的学生
+        let currentTargetStudent = null;    // 当前被点击的学生
+        let isGuestMode = false;             // 是否为游客模式
 
-        // ========== 登录 ==========
+        // ========== 登录功能 ==========
         async function login() {
             const studentId = document.getElementById('studentIdInput').value.trim();
             const errorDiv = document.getElementById('loginError');
@@ -327,33 +366,43 @@
                     .select('*')
                     .eq('student_id', numId)
                     .maybeSingle();
-
-                if (error) {
-                    console.error('Supabase错误:', error);
-                    errorDiv.innerText = '查询失败：' + error.message;
-                    return;
-                }
+                if (error) throw error;
                 if (!data) {
                     errorDiv.innerText = '学号不存在，请确认';
                     return;
                 }
                 currentStudent = data;
                 sessionStorage.setItem('studentId', numId.toString());
+                // 显示主界面
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('mainContainer').style.display = 'block';
-                // 默认显示我的积分面板
                 switchTab('my');
                 renderStudentInfo();
                 loadMyRules();
                 loadMyApplications();
-                loadClassRank(); // 预加载班级榜数据
+                loadClassRankLogged(); // 登录后班级榜
             } catch (err) {
                 console.error('登录异常:', err);
-                errorDiv.innerText = '登录过程发生异常：' + err.message;
+                errorDiv.innerText = '登录异常：' + err.message;
             }
         }
 
-        // 检查是否已登录
+        // 直接进入班级榜（游客）
+        async function enterClassBoard() {
+            isGuestMode = true;
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('classBoardContainer').style.display = 'block';
+            await loadClassBoard();
+        }
+
+        // 返回登录
+        function backToLogin() {
+            isGuestMode = false;
+            document.getElementById('classBoardContainer').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'block';
+        }
+
+        // 检查是否已登录（自动恢复）
         async function checkLogin() {
             const savedId = sessionStorage.getItem('studentId');
             if (savedId) {
@@ -371,13 +420,14 @@
                     renderStudentInfo();
                     loadMyRules();
                     loadMyApplications();
-                    loadClassRank();
+                    loadClassRankLogged();
                     return;
                 }
             }
             // 未登录，显示登录框
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('classBoardContainer').style.display = 'none';
         }
 
         // 渲染个人信息
@@ -392,7 +442,7 @@
             `;
         }
 
-        // ========== 标签页切换 ==========
+        // 标签页切换
         function switchTab(tab) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -402,17 +452,17 @@
             } else {
                 document.querySelector('.tab-btn[onclick="switchTab(\'class\')"]').classList.add('active');
                 document.getElementById('classPanel').classList.add('active');
-                loadClassRank(); // 每次进入班级榜刷新数据
             }
         }
 
-        // ========== 我的积分：加载加分规则（所有启用规则）==========
+        // ========== 我的积分功能 ==========
         async function loadMyRules() {
             try {
                 const { data: rules, error } = await supabaseClient
                     .from('point_rules')
                     .select('*')
-                    .eq('enabled', true);
+                    .eq('enabled', true)
+                    .eq('type', 'add');
                 if (error) throw error;
                 const container = document.getElementById('rulesList');
                 container.innerHTML = '';
@@ -427,7 +477,7 @@
                         <h3>${rule.name}</h3>
                         <p>${rule.description || ''}</p>
                         <span class="points-tag">默认 ${rule.points} 分</span>
-                        <button onclick="showSelfApplyModal(${rule.id})">为自己申请</button>
+                        <button onclick="submitSelfApply(${rule.id})">为自己申请</button>
                     `;
                     container.appendChild(card);
                 });
@@ -436,102 +486,26 @@
             }
         }
 
-        // 为自己申请（原功能）
-        function showSelfApplyModal(ruleId) {
-            selectedRuleId = ruleId;
-            // 填充规则下拉（仅用于显示，实际固定为选中的规则）
-            fillRuleSelect(ruleId);
-            document.getElementById('applyModalTitle').innerText = '为自己申请加分';
-            document.getElementById('targetStudentId').value = '';
-            document.getElementById('targetStudentName').innerHTML = '';
-            document.getElementById('applyModal').style.display = 'flex';
-        }
-
-        // 为他人申请（班级榜点击触发）
-        function showApplyForStudent(student) {
-            // 填充规则下拉（默认选中第一个规则）
-            fillRuleSelect(null);
-            document.getElementById('applyModalTitle').innerText = `为 ${student.name} 申请加分`;
-            document.getElementById('targetStudentId').value = student.id;
-            document.getElementById('targetStudentName').innerHTML = `被加分学生：${student.name} (学号 ${student.student_id})`;
-            document.getElementById('applyModal').style.display = 'flex';
-        }
-
-        // 填充规则下拉框
-        async function fillRuleSelect(selectedId) {
-            const select = document.getElementById('ruleSelect');
-            select.innerHTML = '';
+        async function submitSelfApply(ruleId) {
+            if (!currentStudent) return;
             try {
-                const { data: rules, error } = await supabaseClient
-                    .from('point_rules')
-                    .select('*')
-                    .eq('enabled', true)
-                    .eq('type', 'add'); // 只显示加分规则（互评用加分，也可根据需要调整）
+                const { error } = await supabaseClient
+                    .from('applications')
+                    .insert({
+                        student_id: currentStudent.id,
+                        rule_id: ruleId,
+                        custom_points: null,
+                        reason: null,
+                        status: 'pending'
+                    });
                 if (error) throw error;
-                rules.forEach(rule => {
-                    const opt = document.createElement('option');
-                    opt.value = rule.id;
-                    opt.textContent = `${rule.name} (默认 ${rule.points} 分)`;
-                    if (rule.id === selectedId) opt.selected = true;
-                    select.appendChild(opt);
-                });
-            } catch (err) {
-                console.error('加载规则失败', err);
-            }
-        }
-
-        // 关闭模态框
-        function closeApplyModal() {
-            document.getElementById('applyModal').style.display = 'none';
-        }
-
-        // 提交申请（通用：可为自己或他人）
-        async function submitApplication() {
-            const targetStudentId = document.getElementById('targetStudentId').value;
-            const ruleId = document.getElementById('ruleSelect').value;
-            const customPoints = document.getElementById('customPoints').value;
-            const reason = document.getElementById('applyReason').value.trim();
-
-            // 确定被加分的学生ID
-            let studentIdForInsert;
-            if (targetStudentId) {
-                // 为他人申请
-                studentIdForInsert = targetStudentId;
-            } else {
-                // 为自己申请
-                if (!currentStudent) {
-                    alert('未登录');
-                    return;
-                }
-                studentIdForInsert = currentStudent.id;
-            }
-
-            const { error } = await supabaseClient
-                .from('applications')
-                .insert({
-                    student_id: studentIdForInsert,
-                    rule_id: ruleId,
-                    custom_points: customPoints ? parseInt(customPoints) : null,
-                    reason: reason || null,
-                    status: 'pending'
-                });
-
-            if (error) {
-                alert('提交失败：' + error.message);
-            } else {
                 alert('申请已提交，等待老师审核');
-                closeApplyModal();
-                document.getElementById('customPoints').value = '';
-                document.getElementById('applyReason').value = '';
-                if (!targetStudentId) {
-                    // 为自己申请，刷新申请记录
-                    loadMyApplications();
-                }
-                // 班级榜不需要刷新申请记录，因为不涉及当前学生
+                loadMyApplications();
+            } catch (err) {
+                alert('提交失败：' + err.message);
             }
         }
 
-        // 加载我的申请记录
         async function loadMyApplications() {
             if (!currentStudent) return;
             try {
@@ -549,7 +523,7 @@
                 }
                 apps.forEach(app => {
                     const row = tbody.insertRow();
-                    const points = app.custom_points || (app.point_rules?.name || '');
+                    const points = app.custom_points || (app.point_rules?.name ? '' : '');
                     const statusClass = `status-${app.status}`;
                     const statusText = app.status === 'pending' ? '待审核' : (app.status === 'approved' ? '已通过' : '已拒绝');
                     row.innerHTML = `
@@ -566,27 +540,33 @@
             }
         }
 
-        // ========== 班级榜 ==========
-        async function loadClassRank() {
+        // ========== 班级榜（共用） ==========
+        // 渲染学生卡片（头像白底黑字显示分数）
+        function createStudentCard(student, onClick) {
+            const card = document.createElement('div');
+            card.className = 'student-card';
+            if (onClick) card.onclick = onClick;
+            card.innerHTML = `
+                <div class="student-avatar">${student.total_points}</div>
+                <div class="student-name">${student.name}</div>
+                <div class="student-id">学号 ${student.student_id}</div>
+                <div class="student-points">🏆 ${student.total_points} 分</div>
+            `;
+            return card;
+        }
+
+        // 加载班级榜（登录后）
+        async function loadClassRankLogged() {
             try {
                 const { data: students, error } = await supabaseClient
                     .from('students')
                     .select('*')
                     .order('student_id');
                 if (error) throw error;
-                const grid = document.getElementById('classGrid');
+                const grid = document.getElementById('classGridLogged');
                 grid.innerHTML = '';
                 students.forEach(s => {
-                    const card = document.createElement('div');
-                    card.className = 'student-card';
-                    card.onclick = () => showApplyForStudent(s);
-                    const avatarLetter = s.name ? s.name.charAt(0) : '?';
-                    card.innerHTML = `
-                        <div class="student-avatar">${avatarLetter}</div>
-                        <div class="student-name">${s.name}</div>
-                        <div class="student-id">学号 ${s.student_id}</div>
-                        <div class="student-points">🏆 ${s.total_points} 分</div>
-                    `;
+                    const card = createStudentCard(s, () => showAddModal(s));
                     grid.appendChild(card);
                 });
             } catch (err) {
@@ -594,13 +574,89 @@
             }
         }
 
-        // ========== 退出登录 ==========
+        // 加载班级榜（游客模式）
+        async function loadClassBoard() {
+            try {
+                const { data: students, error } = await supabaseClient
+                    .from('students')
+                    .select('*')
+                    .order('student_id');
+                if (error) throw error;
+                const grid = document.getElementById('classBoardGrid');
+                grid.innerHTML = '';
+                students.forEach(s => {
+                    const card = createStudentCard(s, () => showAddModal(s));
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                console.error('加载班级榜失败', err);
+            }
+        }
+
+        // ========== 加分弹窗（九宫格） ==========
+        async function showAddModal(student) {
+            currentTargetStudent = student;
+            document.getElementById('modalTitle').innerText = `为 ${student.name} 加分`;
+            const ruleGrid = document.getElementById('ruleGrid');
+            ruleGrid.innerHTML = '';
+            try {
+                const { data: rules, error } = await supabaseClient
+                    .from('point_rules')
+                    .select('*')
+                    .eq('enabled', true)
+                    .eq('type', 'add');
+                if (error) throw error;
+                if (!rules || rules.length === 0) {
+                    ruleGrid.innerHTML = '<p>暂无可用加分规则</p>';
+                } else {
+                    rules.forEach(rule => {
+                        const btn = document.createElement('button');
+                        btn.className = 'rule-grid-item';
+                        btn.innerHTML = `${rule.name} <span class="points-badge-small">+${rule.points}</span>`;
+                        btn.onclick = () => submitAdd(rule.id);
+                        ruleGrid.appendChild(btn);
+                    });
+                }
+                document.getElementById('applyModal').style.display = 'flex';
+            } catch (err) {
+                console.error('加载规则失败', err);
+                alert('加载规则失败：' + err.message);
+            }
+        }
+
+        async function submitAdd(ruleId) {
+            if (!currentTargetStudent) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('applications')
+                    .insert({
+                        student_id: currentTargetStudent.id,
+                        rule_id: ruleId,
+                        custom_points: null,
+                        reason: null,
+                        status: 'pending'
+                    });
+                if (error) throw error;
+                alert('加分申请已提交，等待老师审核');
+                closeModal();
+            } catch (err) {
+                console.error('提交失败', err);
+                alert('提交失败：' + err.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('applyModal').style.display = 'none';
+            currentTargetStudent = null;
+        }
+
+        // 退出登录
         function logout() {
             sessionStorage.removeItem('studentId');
             location.reload();
         }
 
-        // ========== 初始化 ==========
+        // 初始化
         checkLogin();
     </script>
 </body>
