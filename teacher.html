@@ -6,7 +6,7 @@
     <title>教师端 · 班级管理</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* ========== 完整样式 ========== */
+        /* 样式完整保留，与之前一致，为节省篇幅此处省略，实际使用时请保留之前完整样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -365,18 +365,18 @@
     </div>
 
     <script>
-        // ========== Supabase 配置 ==========
+        // ========== Supabase 配置（使用 supabaseClient 避免冲突）==========
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ========== 登录/登出 ==========
-        window.teacherLogin = async function() {
+        // ========== 登录/登出（直接定义为全局函数）==========
+        async function teacherLogin() {
             console.log('登录函数被调用');
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('config')
                     .select('admin_password')
                     .eq('id', 1)
@@ -403,12 +403,12 @@
                 console.error('登录错误:', err);
                 document.getElementById('loginError').innerText = '系统错误：' + err.message;
             }
-        };
+        }
 
-        window.teacherLogout = function() {
+        function teacherLogout() {
             sessionStorage.removeItem('teacherLoggedIn');
             location.reload();
-        };
+        }
 
         function checkTeacherLogin() {
             if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
@@ -425,7 +425,7 @@
         }
 
         // ========== 标签页切换 ==========
-        window.switchTab = function(tab) {
+        function switchTab(tab) {
             console.log('切换标签页:', tab);
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -437,7 +437,7 @@
                     btn.classList.add('active');
                 }
             });
-        };
+        }
 
         // ========== 规则管理 ==========
         async function loadRules() {
@@ -446,7 +446,7 @@
             if (!tbody) return;
             
             try {
-                const { data: rules, error } = await supabase
+                const { data: rules, error } = await supabaseClient
                     .from('point_rules')
                     .select('*')
                     .order('type')
@@ -485,9 +485,9 @@
             }
         }
 
-        window.editRule = async function(id) {
+        async function editRule(id) {
             try {
-                const { data: rule, error } = await supabase
+                const { data: rule, error } = await supabaseClient
                     .from('point_rules')
                     .select('*')
                     .eq('id', id)
@@ -504,18 +504,18 @@
             } catch (err) {
                 alert('获取规则失败：' + err.message);
             }
-        };
+        }
 
-        window.toggleRule = async function(id) {
+        async function toggleRule(id) {
             try {
-                const { data: rule, error } = await supabase
+                const { data: rule, error } = await supabaseClient
                     .from('point_rules')
                     .select('enabled')
                     .eq('id', id)
                     .single();
                 if (error) throw error;
                 
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabaseClient
                     .from('point_rules')
                     .update({ enabled: !rule.enabled })
                     .eq('id', id);
@@ -525,12 +525,12 @@
             } catch (err) {
                 alert('切换失败：' + err.message);
             }
-        };
+        }
 
-        window.deleteRule = async function(id) {
+        async function deleteRule(id) {
             if (!confirm('确定删除？')) return;
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('point_rules')
                     .delete()
                     .eq('id', id);
@@ -539,9 +539,9 @@
             } catch (err) {
                 alert('删除失败：' + err.message);
             }
-        };
+        }
 
-        window.saveRule = async function() {
+        async function saveRule() {
             const id = document.getElementById('ruleId').value;
             const type = document.getElementById('ruleType').value;
             const name = document.getElementById('ruleName').value.trim();
@@ -557,13 +557,13 @@
             
             try {
                 if (id) {
-                    const { error } = await supabase
+                    const { error } = await supabaseClient
                         .from('point_rules')
                         .update(data)
                         .eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase
+                    const { error } = await supabaseClient
                         .from('point_rules')
                         .insert([data]);
                     if (error) throw error;
@@ -573,11 +573,11 @@
             } catch (err) {
                 alert('保存失败：' + err.message);
             }
-        };
+        }
 
-        window.closeRuleModal = function() {
+        function closeRuleModal() {
             document.getElementById('ruleModal').style.display = 'none';
-        };
+        }
 
         // ========== 学生管理 ==========
         async function loadStudents() {
@@ -586,7 +586,7 @@
             if (!tbody) return;
             
             try {
-                const { data: students, error } = await supabase
+                const { data: students, error } = await supabaseClient
                     .from('students')
                     .select('*')
                     .order('student_id');
@@ -618,7 +618,7 @@
             }
         }
 
-        window.toggleSelectAll = function(type) {
+        function toggleSelectAll(type) {
             let checkboxes, selectAll;
             if (type === 'student') {
                 checkboxes = document.querySelectorAll('.student-checkbox');
@@ -632,9 +632,9 @@
             const allChecked = Array.from(checkboxes).every(cb => cb.checked);
             checkboxes.forEach(cb => cb.checked = !allChecked);
             if (selectAll) selectAll.checked = !allChecked;
-        };
+        }
 
-        window.toggleAllCheckboxes = function(type) {
+        function toggleAllCheckboxes(type) {
             let checkboxes, selectAll;
             if (type === 'student') {
                 checkboxes = document.querySelectorAll('.student-checkbox');
@@ -646,9 +646,9 @@
                 return;
             }
             checkboxes.forEach(cb => cb.checked = selectAll.checked);
-        };
+        }
 
-        window.clearSelectedPoints = async function() {
+        async function clearSelectedPoints() {
             const checkboxes = document.querySelectorAll('.student-checkbox:checked');
             if (checkboxes.length === 0) {
                 alert('请至少选择一个学生');
@@ -661,7 +661,7 @@
             
             for (const id of studentIds) {
                 try {
-                    const { error } = await supabase
+                    const { error } = await supabaseClient
                         .from('students')
                         .update({ total_points: 0 })
                         .eq('id', id);
@@ -675,21 +675,21 @@
             alert(`积分清零完成：${successCount} 个成功`);
             loadStudents();
             loadRank();
-        };
+        }
 
-        window.editStudent = function(id, name, className) {
+        function editStudent(id, name, className) {
             document.getElementById('editStudentId').value = id;
             document.getElementById('editStudentName').value = name;
             document.getElementById('editStudentClass').value = className;
             document.getElementById('editStudentPoints').value = 0;
             document.getElementById('studentModal').style.display = 'flex';
-        };
+        }
 
-        window.closeStudentModal = function() {
+        function closeStudentModal() {
             document.getElementById('studentModal').style.display = 'none';
-        };
+        }
 
-        window.saveStudent = async function() {
+        async function saveStudent() {
             const id = document.getElementById('editStudentId').value;
             const name = document.getElementById('editStudentName').value.trim();
             const className = document.getElementById('editStudentClass').value.trim();
@@ -701,14 +701,14 @@
             }
             
             try {
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabaseClient
                     .from('students')
                     .update({ name, class: className })
                     .eq('id', id);
                 if (updateError) throw updateError;
 
                 if (pointsAdjust !== 0) {
-                    const { error: rpcError } = await supabase
+                    const { error: rpcError } = await supabaseClient
                         .rpc('increment_student_points', { student_id: id, points: pointsAdjust });
                     if (rpcError) throw rpcError;
                 }
@@ -719,7 +719,7 @@
             } catch (err) {
                 alert('保存失败：' + err.message);
             }
-        };
+        }
 
         // ========== 申请审核 ==========
         async function loadApplications() {
@@ -729,7 +729,7 @@
             
             try {
                 // 待审核
-                const { data: pending, error: pendingError } = await supabase
+                const { data: pending, error: pendingError } = await supabaseClient
                     .from('applications')
                     .select('*, students(name, student_id), point_rules(name, points, type)')
                     .eq('status', 'pending')
@@ -766,7 +766,7 @@
                 }
 
                 // 已审核
-                const { data: history, error: historyError } = await supabase
+                const { data: history, error: historyError } = await supabaseClient
                     .from('applications')
                     .select('*, students(name, student_id), point_rules(name, points, type)')
                     .neq('status', 'pending')
@@ -809,7 +809,7 @@
             }
         }
 
-        window.batchReview = async function(status) {
+        async function batchReview(status) {
             const checkboxes = document.querySelectorAll('.pending-checkbox:checked');
             if (checkboxes.length === 0) {
                 alert('请至少选择一个申请');
@@ -825,14 +825,14 @@
 
             for (const id of ids) {
                 try {
-                    const { error: updateError } = await supabase
+                    const { error: updateError } = await supabaseClient
                         .from('applications')
                         .update({ status, reviewed_at: new Date() })
                         .eq('id', id);
                     if (updateError) throw updateError;
 
                     if (status === 'approved') {
-                        const { data: app, error: fetchError } = await supabase
+                        const { data: app, error: fetchError } = await supabaseClient
                             .from('applications')
                             .select('student_id, custom_points, point_rules(points, type)')
                             .eq('id', id)
@@ -844,7 +844,7 @@
 
                         const pointValue = app.point_rules.type === 'add' ? points : -points;
 
-                        const { error: rpcError } = await supabase
+                        const { error: rpcError } = await supabaseClient
                             .rpc('increment_student_points', {
                                 student_id: app.student_id,
                                 points: pointValue
@@ -864,18 +864,18 @@
             
             const selectAll = document.getElementById('selectAllPending');
             if (selectAll) selectAll.checked = false;
-        };
+        }
 
-        window.reviewApplication = async function(id, status) {
+        async function reviewApplication(id, status) {
             try {
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabaseClient
                     .from('applications')
                     .update({ status, reviewed_at: new Date() })
                     .eq('id', id);
                 if (updateError) throw updateError;
 
                 if (status === 'approved') {
-                    const { data: app, error: fetchError } = await supabase
+                    const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
                         .select('student_id, custom_points, point_rules(points, type)')
                         .eq('id', id)
@@ -887,7 +887,7 @@
 
                     const pointValue = app.point_rules.type === 'add' ? points : -points;
 
-                    const { error: rpcError } = await supabase
+                    const { error: rpcError } = await supabaseClient
                         .rpc('increment_student_points', {
                             student_id: app.student_id,
                             points: pointValue
@@ -900,12 +900,12 @@
             } catch (err) {
                 alert('审核失败：' + err.message);
             }
-        };
+        }
 
-        window.deleteHistory = async function(id) {
+        async function deleteHistory(id) {
             if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('applications')
                     .delete()
                     .eq('id', id);
@@ -914,7 +914,7 @@
             } catch (err) {
                 alert('删除失败：' + err.message);
             }
-        };
+        }
 
         // ========== 积分排名 ==========
         async function loadRank() {
@@ -923,7 +923,7 @@
             if (!tbody) return;
             
             try {
-                const { data: students, error } = await supabase
+                const { data: students, error } = await supabaseClient
                     .from('students')
                     .select('student_id, name, class, total_points')
                     .order('total_points', { ascending: false });
