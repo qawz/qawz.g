@@ -6,6 +6,7 @@
     <title>班级优化大师 · 学生端</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        /* ========== 基础样式 ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -213,7 +214,7 @@
             font-weight: bold;
         }
 
-        /* 加分弹窗九宫格 */
+        /* 加分弹窗九宫格（含头像） */
         .modal {
             display: none;
             position: fixed;
@@ -227,40 +228,71 @@
             background: white;
             padding: 30px;
             border-radius: 20px;
-            width: 400px;
+            width: 450px;
             max-width: 90%;
+            position: relative;
         }
         .modal-content h3 {
             margin-bottom: 20px;
             text-align: center;
         }
+        .custom-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .custom-btn:hover { background: #e0a800; }
         .rule-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
         }
-        .rule-grid-item {
+        .rule-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .rule-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .rule-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             background: #667eea;
             color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 15px 5px;
-            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .rule-info {
+            flex: 1;
+        }
+        .rule-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .rule-desc {
             font-size: 0.9rem;
-            text-align: center;
-            transition: background 0.2s;
-        }
-        .rule-grid-item:hover {
-            background: #5a67d8;
-        }
-        .rule-grid-item .points-badge-small {
-            display: inline-block;
-            background: rgba(255,255,255,0.3);
-            border-radius: 12px;
-            padding: 2px 8px;
-            margin-left: 5px;
-            font-size: 0.8rem;
+            color: #888;
         }
         .close-btn {
             width: 100%;
@@ -271,6 +303,7 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 1rem;
+            margin-top: 20px;
         }
         .close-btn:hover { background: #cbd5e0; }
     </style>
@@ -328,10 +361,11 @@
         <div id="classBoardGrid" class="class-grid"></div>
     </div>
 
-    <!-- 加分弹窗（九宫格） -->
+    <!-- 加分弹窗（九宫格 + 自定义按钮） -->
     <div id="applyModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle">选择加分项</h3>
+            <button class="custom-btn" onclick="customAdd()">✨ 自定义</button>
             <div id="ruleGrid" class="rule-grid"></div>
             <button class="close-btn" onclick="closeModal()">取消</button>
         </div>
@@ -346,6 +380,7 @@
         let currentStudent = null;          // 登录后的学生
         let currentTargetStudent = null;    // 当前被点击的学生
         let isGuestMode = false;             // 是否为游客模式
+        let customRuleId = null;             // 用于自定义加分的规则ID（将使用第一个可用加分规则）
 
         // ========== 登录功能 ==========
         async function login() {
@@ -373,14 +408,13 @@
                 }
                 currentStudent = data;
                 sessionStorage.setItem('studentId', numId.toString());
-                // 显示主界面
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('mainContainer').style.display = 'block';
                 switchTab('my');
                 renderStudentInfo();
                 loadMyRules();
                 loadMyApplications();
-                loadClassRankLogged(); // 登录后班级榜
+                loadClassRankLogged();
             } catch (err) {
                 console.error('登录异常:', err);
                 errorDiv.innerText = '登录异常：' + err.message;
@@ -424,7 +458,6 @@
                     return;
                 }
             }
-            // 未登录，显示登录框
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('mainContainer').style.display = 'none';
             document.getElementById('classBoardContainer').style.display = 'none';
@@ -541,7 +574,6 @@
         }
 
         // ========== 班级榜（共用） ==========
-        // 渲染学生卡片（头像白底黑字显示分数）
         function createStudentCard(student, onClick) {
             const card = document.createElement('div');
             card.className = 'student-card';
@@ -555,7 +587,6 @@
             return card;
         }
 
-        // 加载班级榜（登录后）
         async function loadClassRankLogged() {
             try {
                 const { data: students, error } = await supabaseClient
@@ -574,7 +605,6 @@
             }
         }
 
-        // 加载班级榜（游客模式）
         async function loadClassBoard() {
             try {
                 const { data: students, error } = await supabaseClient
@@ -593,34 +623,88 @@
             }
         }
 
-        // ========== 加分弹窗（九宫格） ==========
+        // ========== 加分弹窗（带自定义按钮和头像） ==========
         async function showAddModal(student) {
             currentTargetStudent = student;
             document.getElementById('modalTitle').innerText = `为 ${student.name} 加分`;
+
+            // 加载加分规则
+            const { data: rules, error } = await supabaseClient
+                .from('point_rules')
+                .select('*')
+                .eq('enabled', true)
+                .eq('type', 'add');
+            if (error) {
+                alert('加载规则失败：' + error.message);
+                return;
+            }
+            if (!rules || rules.length === 0) {
+                alert('暂无可用加分规则');
+                return;
+            }
+
+            // 保存第一个规则作为自定义加分的默认规则（如果没有自定义规则，可让用户选择）
+            customRuleId = rules[0].id;
+
             const ruleGrid = document.getElementById('ruleGrid');
             ruleGrid.innerHTML = '';
-            try {
+
+            rules.forEach(rule => {
+                const item = document.createElement('div');
+                item.className = 'rule-item';
+                item.onclick = () => submitAdd(rule.id);
+                item.innerHTML = `
+                    <div class="rule-avatar">+${rule.points}</div>
+                    <div class="rule-info">
+                        <div class="rule-name">${rule.name}</div>
+                        <div class="rule-desc">${rule.description || '加分项'}</div>
+                    </div>
+                `;
+                ruleGrid.appendChild(item);
+            });
+
+            document.getElementById('applyModal').style.display = 'flex';
+        }
+
+        // 自定义加分
+        async function customAdd() {
+            if (!currentTargetStudent) return;
+            const points = prompt('请输入要加的分值（正整数）', '5');
+            if (points === null) return; // 取消
+            const numPoints = parseInt(points);
+            if (isNaN(numPoints) || numPoints <= 0) {
+                alert('请输入有效的正整数');
+                return;
+            }
+            if (!customRuleId) {
+                // 如果没有可用的规则，尝试获取第一个加分规则
                 const { data: rules, error } = await supabaseClient
                     .from('point_rules')
-                    .select('*')
+                    .select('id')
                     .eq('enabled', true)
-                    .eq('type', 'add');
-                if (error) throw error;
-                if (!rules || rules.length === 0) {
-                    ruleGrid.innerHTML = '<p>暂无可用加分规则</p>';
-                } else {
-                    rules.forEach(rule => {
-                        const btn = document.createElement('button');
-                        btn.className = 'rule-grid-item';
-                        btn.innerHTML = `${rule.name} <span class="points-badge-small">+${rule.points}</span>`;
-                        btn.onclick = () => submitAdd(rule.id);
-                        ruleGrid.appendChild(btn);
-                    });
+                    .eq('type', 'add')
+                    .limit(1);
+                if (error || !rules || rules.length === 0) {
+                    alert('无可用加分规则，无法自定义');
+                    return;
                 }
-                document.getElementById('applyModal').style.display = 'flex';
+                customRuleId = rules[0].id;
+            }
+            try {
+                const { error } = await supabaseClient
+                    .from('applications')
+                    .insert({
+                        student_id: currentTargetStudent.id,
+                        rule_id: customRuleId,
+                        custom_points: numPoints,
+                        reason: null,
+                        status: 'pending'
+                    });
+                if (error) throw error;
+                alert('自定义加分申请已提交');
+                closeModal();
             } catch (err) {
-                console.error('加载规则失败', err);
-                alert('加载规则失败：' + err.message);
+                alert('提交失败：' + err.message);
             }
         }
 
@@ -637,10 +721,9 @@
                         status: 'pending'
                     });
                 if (error) throw error;
-                alert('加分申请已提交，等待老师审核');
+                alert('加分申请已提交');
                 closeModal();
             } catch (err) {
-                console.error('提交失败', err);
                 alert('提交失败：' + err.message);
             }
         }
