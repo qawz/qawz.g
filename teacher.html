@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师端 · 班级管理</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 350px;
+            text-align: center;
+        }
+        .login-container h2 { margin-bottom: 20px; color: #333; }
+        .login-container input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .login-container .error { color: red; margin-top: 10px; }
+        .main-container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 100%;
+            display: none;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header h1 { color: #333; }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+        }
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: #333; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th { background: #f1f5f9; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        .status-pending { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 20px; }
+        .status-approved { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; }
+        .status-rejected { background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 20px; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 400px;
+            max-width: 90%;
+        }
+        .modal-content input, .modal-content textarea, .modal-content select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录界面 -->
+    <div id="loginContainer" class="login-container">
+        <h2>教师登录</h2>
+        <input type="text" id="username" placeholder="用户名" value="admin">
+        <input type="password" id="password" placeholder="密码">
+        <button onclick="teacherLogin()">登录</button>
+        <p id="loginError" class="error"></p>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="mainContainer" class="main-container">
+        <div class="header">
+            <h1>📊 班级管理 · 教师端</h1>
+            <div class="nav">
+                <a href="#" onclick="teacherLogout()">退出登录</a>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('rules')">📋 加分规则</button>
+            <button class="tab-btn" onclick="switchTab('students')">👥 学生管理</button>
+            <button class="tab-btn" onclick="switchTab('applications')">📬 申请审核</button>
+            <button class="tab-btn" onclick="switchTab('rank')">🏆 积分排名</button>
+        </div>
+
+        <!-- 规则管理 -->
+        <div id="rulesPanel" class="panel active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>加分规则管理</h2>
+                    <button class="btn btn-primary" onclick="showRuleModal()">➕ 新建规则</button>
+                </div>
+                <table>
+                    <thead><tr><th>名称</th><th>描述</th><th>分值</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="rulesList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 学生管理 -->
+        <div id="studentsPanel" class="panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>学生列表</h2>
+                    <input type="text" id="studentSearch" placeholder="搜索学号或姓名" style="padding:8px;">
+                </div>
+                <table>
+                    <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>积分</th><th>操作</th></tr></thead>
+                    <tbody id="studentsList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 申请审核 -->
+        <div id="applicationsPanel" class="panel">
+            <div class="card">
+                <h2>待审核申请</h2>
+                <table>
+                    <thead><tr><th>学生</th><th>项目</th><th>分值</th><th>理由</th><th>申请时间</th><th>操作</th></tr></thead>
+                    <tbody id="pendingList"></tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h2>已审核申请</h2>
+                <table>
+                    <thead><tr><th>学生</th><th>项目</th><th>分值</th><th>理由</th><th>状态</th><th>审核时间</th></tr></thead>
+                    <tbody id="historyList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 积分排名 -->
+        <div id="rankPanel" class="panel">
+            <div class="card">
+                <h2>积分排名</h2>
+                <table>
+                    <thead><tr><th>排名</th><th>学号</th><th>姓名</th><th>班级</th><th>积分</th></tr></thead>
+                    <tbody id="rankList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 规则编辑模态框 -->
+    <div id="ruleModal" class="modal">
+        <div class="modal-content">
+            <h3 id="ruleModalTitle">新建规则</h3>
+            <input type="hidden" id="ruleId">
+            <label>规则名称</label><input type="text" id="ruleName">
+            <label>描述</label><textarea id="ruleDesc" rows="2"></textarea>
+            <label>默认分值</label><input type="number" id="rulePoints">
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-success" onclick="saveRule()">保存</button>
+                <button class="btn btn-danger" onclick="closeRuleModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生编辑模态框（用于修改姓名、班级、调整积分） -->
+    <div id="studentModal" class="modal">
+        <div class="modal-content">
+            <h3>编辑学生</h3>
+            <input type="hidden" id="editStudentId">
+            <label>姓名</label><input type="text" id="editStudentName">
+            <label>班级</label><input type="text" id="editStudentClass">
+            <label>调整积分</label><input type="number" id="editStudentPoints" value="0" placeholder="正加负减">
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-success" onclick="saveStudent()">保存</button>
+                <button class="btn btn-danger" onclick="closeStudentModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let isTeacherLoggedIn = false;
+        let currentTab = 'rules';
+
+        // 教师登录验证
+        window.teacherLogin = async function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            // 从 config 表读取 admin_password
+            const { data, error } = await supabase
+                .from('config')
+                .select('admin_password')
+                .eq('id', 1)
+                .single();
+            if (error || !data) {
+                document.getElementById('loginError').innerText = '系统错误，无法验证';
+                return;
+            }
+            if (username === 'admin' && password === data.admin_password) {
+                isTeacherLoggedIn = true;
+                sessionStorage.setItem('teacherLoggedIn', 'true');
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                // 加载数据
+                loadRules();
+                loadStudents();
+                loadApplications();
+                loadRank();
+            } else {
+                document.getElementById('loginError').innerText = '用户名或密码错误';
+            }
+        };
+
+        // 检查登录状态
+        function checkTeacherLogin() {
+            if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
+                isTeacherLoggedIn = true;
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                loadRules();
+                loadStudents();
+                loadApplications();
+                loadRank();
+            } else {
+                document.getElementById('loginContainer').style.display = 'block';
+                document.getElementById('mainContainer').style.display = 'none';
+            }
+        }
+
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(tab + 'Panel').classList.add('active');
+        };
+
+        // ---------- 规则管理 ----------
+        async function loadRules() {
+            const { data: rules } = await supabase.from('point_rules').select('*').order('id');
+            const tbody = document.getElementById('rulesList');
+            tbody.innerHTML = '';
+            if (!rules) return;
+            rules.forEach(rule => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${rule.name}</td>
+                    <td>${rule.description || '-'}</td>
+                    <td>${rule.points}</td>
+                    <td><span style="background:${rule.enabled ? '#d4edda' : '#f8d7da'}; color:${rule.enabled ? '#155724' : '#721c24'}; padding:4px 10px; border-radius:20px;">${rule.enabled ? '启用' : '禁用'}</span></td>
+                    <td>
+                        <button class="btn btn-success btn-sm" onclick="editRule(${rule.id})">编辑</button>
+                        <button class="btn btn-warning btn-sm" onclick="toggleRule(${rule.id})">${rule.enabled ? '禁用' : '启用'}</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteRule(${rule.id})">删除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.showRuleModal = function() {
+            document.getElementById('ruleModalTitle').innerText = '新建规则';
+            document.getElementById('ruleId').value = '';
+            document.getElementById('ruleName').value = '';
+            document.getElementById('ruleDesc').value = '';
+            document.getElementById('rulePoints').value = 5;
+            document.getElementById('ruleModal').style.display = 'flex';
+        };
+
+        window.editRule = async function(id) {
+            const { data: rule } = await supabase.from('point_rules').select('*').eq('id', id).single();
+            document.getElementById('ruleModalTitle').innerText = '编辑规则';
+            document.getElementById('ruleId').value = rule.id;
+            document.getElementById('ruleName').value = rule.name;
+            document.getElementById('ruleDesc').value = rule.description || '';
+            document.getElementById('rulePoints').value = rule.points;
+            document.getElementById('ruleModal').style.display = 'flex';
+        };
+
+        window.closeRuleModal = function() {
+            document.getElementById('ruleModal').style.display = 'none';
+        };
+
+        window.saveRule = async function() {
+            const id = document.getElementById('ruleId').value;
+            const name = document.getElementById('ruleName').value.trim();
+            const desc = document.getElementById('ruleDesc').value.trim();
+            const points = parseInt(document.getElementById('rulePoints').value);
+            if (!name || !points) { alert('请填写名称和分值'); return; }
+            const data = { name, description: desc, points, enabled: true };
+            if (id) {
+                await supabase.from('point_rules').update(data).eq('id', id);
+            } else {
+                await supabase.from('point_rules').insert([data]);
+            }
+            closeRuleModal();
+            loadRules();
+        };
+
+        window.toggleRule = async function(id) {
+            const { data: rule } = await supabase.from('point_rules').select('enabled').eq('id', id).single();
+            await supabase.from('point_rules').update({ enabled: !rule.enabled }).eq('id', id);
+            loadRules();
+        };
+
+        window.deleteRule = async function(id) {
+            if (!confirm('确定删除？')) return;
+            await supabase.from('point_rules').delete().eq('id', id);
+            loadRules();
+        };
+
+        // ---------- 学生管理 ----------
+        async function loadStudents() {
+            const { data: students } = await supabase.from('students').select('*').order('student_id');
+            const tbody = document.getElementById('studentsList');
+            tbody.innerHTML = '';
+            students.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${s.student_id}</td>
+                    <td>${s.name}</td>
+                    <td>${s.class || '1班'}</td>
+                    <td>${s.total_points}</td>
+                    <td><button class="btn btn-success btn-sm" onclick="editStudent('${s.id}', '${s.name}', '${s.class || ''}')">编辑</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.editStudent = function(id, name, className) {
+            document.getElementById('editStudentId').value = id;
+            document.getElementById('editStudentName').value = name;
+            document.getElementById('editStudentClass').value = className;
+            document.getElementById('editStudentPoints').value = 0;
+            document.getElementById('studentModal').style.display = 'flex';
+        };
+
+        window.closeStudentModal = function() {
+            document.getElementById('studentModal').style.display = 'none';
+        };
+
+        window.saveStudent = async function() {
+            const id = document.getElementById('editStudentId').value;
+            const name = document.getElementById('editStudentName').value.trim();
+            const className = document.getElementById('editStudentClass').value.trim();
+            const pointsAdjust = parseInt(document.getElementById('editStudentPoints').value) || 0;
+
+            if (!name) { alert('姓名不能为空'); return; }
+            // 更新信息
+            await supabase.from('students').update({ name, class: className }).eq('id', id);
+            // 调整积分
+            if (pointsAdjust !== 0) {
+                await supabase.rpc('increment_student_points', { student_id: id, points: pointsAdjust });
+            }
+            closeStudentModal();
+            loadStudents();
+            loadRank();
+        };
+
+        // 搜索学生（前端过滤）
+        document.getElementById('studentSearch')?.addEventListener('input', function(e) {
+            const kw = e.target.value.toLowerCase();
+            document.querySelectorAll('#studentsList tr').forEach(tr => {
+                tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+            });
+        });
+
+        // ---------- 申请审核 ----------
+        async function loadApplications() {
+            // 待审核
+            const { data: pending } = await supabase
+                .from('applications')
+                .select('*, students(name, student_id), point_rules(name, points)')
+                .eq('status', 'pending')
+                .order('created_at');
+            const pendingTbody = document.getElementById('pendingList');
+            pendingTbody.innerHTML = '';
+            if (pending && pending.length > 0) {
+                pending.forEach(app => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${app.students.name} (${app.students.student_id})</td>
+                        <td>${app.point_rules.name}</td>
+                        <td>${app.custom_points || app.point_rules.points}</td>
+                        <td>${app.reason}</td>
+                        <td>${new Date(app.created_at).toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="reviewApplication(${app.id}, 'approved')">通过</button>
+                            <button class="btn btn-danger btn-sm" onclick="reviewApplication(${app.id}, 'rejected')">拒绝</button>
+                        </td>
+                    `;
+                    pendingTbody.appendChild(tr);
+                });
+            } else {
+                pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核申请</td></tr>';
+            }
+
+            // 已审核（最近20条）
+            const { data: history } = await supabase
+                .from('applications')
+                .select('*, students(name, student_id), point_rules(name, points)')
+                .neq('status', 'pending')
+                .order('reviewed_at', { ascending: false })
+                .limit(20);
+            const historyTbody = document.getElementById('historyList');
+            historyTbody.innerHTML = '';
+            if (history && history.length > 0) {
+                history.forEach(app => {
+                    const tr = document.createElement('tr');
+                    const statusClass = `status-${app.status}`;
+                    const statusText = app.status === 'approved' ? '已通过' : '已拒绝';
+                    tr.innerHTML = `
+                        <td>${app.students.name} (${app.students.student_id})</td>
+                        <td>${app.point_rules.name}</td>
+                        <td>${app.custom_points || app.point_rules.points}</td>
+                        <td>${app.reason}</td>
+                        <td><span class="${statusClass}">${statusText}</span></td>
+                        <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
+                    `;
+                    historyTbody.appendChild(tr);
+                });
+            } else {
+                historyTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无历史记录</td></tr>';
+            }
+        }
+
+        window.reviewApplication = async function(id, status) {
+            // 不记录审核人，只更新状态和审核时间
+            const updates = { status, reviewed_at: new Date() };
+            const { error } = await supabase.from('applications').update(updates).eq('id', id);
+            if (error) { alert('操作失败：' + error.message); return; }
+            // 如果通过，增加积分
+            if (status === 'approved') {
+                const { data: app } = await supabase
+                    .from('applications')
+                    .select('*, point_rules(points)')
+                    .eq('id', id)
+                    .single();
+                const points = app.custom_points || app.point_rules.points;
+                await supabase.rpc('increment_student_points', { student_id: app.student_id, points });
+            }
+            loadApplications();
+            loadRank();
+        };
+
+        // ---------- 积分排名 ----------
+        async function loadRank() {
+            const { data: students } = await supabase
+                .from('students')
+                .select('student_id, name, class, total_points')
+                .order('total_points', { ascending: false });
+            const tbody = document.getElementById('rankList');
+            tbody.innerHTML = '';
+            students.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${idx+1}</td><td>${s.student_id}</td><td>${s.name}</td><td>${s.class || '1班'}</td><td>${s.total_points}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.teacherLogout = function() {
+            sessionStorage.removeItem('teacherLoggedIn');
+            location.reload();
+        };
+
+        checkTeacherLogin();
+    </script>
+</body>
+</html>
