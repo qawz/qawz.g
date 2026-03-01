@@ -247,7 +247,7 @@
         </div>
     </div>
 
-    <!-- 学生编辑模态框（用于修改姓名、班级、调整积分） -->
+    <!-- 学生编辑模态框 -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <h3>编辑学生</h3>
@@ -270,11 +270,9 @@
         let isTeacherLoggedIn = false;
         let currentTab = 'rules';
 
-        // 教师登录验证
         window.teacherLogin = async function() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            // 从 config 表读取 admin_password
             const { data, error } = await supabaseClient
                 .from('config')
                 .select('admin_password')
@@ -289,7 +287,6 @@
                 sessionStorage.setItem('teacherLoggedIn', 'true');
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('mainContainer').style.display = 'block';
-                // 加载数据
                 loadRules();
                 loadStudents();
                 loadApplications();
@@ -299,7 +296,6 @@
             }
         };
 
-        // 检查登录状态
         function checkTeacherLogin() {
             if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
                 isTeacherLoggedIn = true;
@@ -434,9 +430,7 @@
             const pointsAdjust = parseInt(document.getElementById('editStudentPoints').value) || 0;
 
             if (!name) { alert('姓名不能为空'); return; }
-            // 更新信息
             await supabaseClient.from('students').update({ name, class: className }).eq('id', id);
-            // 调整积分
             if (pointsAdjust !== 0) {
                 await supabaseClient.rpc('increment_student_points', { student_id: id, points: pointsAdjust });
             }
@@ -445,7 +439,6 @@
             loadRank();
         };
 
-        // 搜索学生（前端过滤）
         document.getElementById('studentSearch')?.addEventListener('input', function(e) {
             const kw = e.target.value.toLowerCase();
             document.querySelectorAll('#studentsList tr').forEach(tr => {
@@ -455,7 +448,6 @@
 
         // ---------- 申请审核 ----------
         async function loadApplications() {
-            // 待审核
             const { data: pending } = await supabaseClient
                 .from('applications')
                 .select('*, students(name, student_id), point_rules(name, points)')
@@ -470,7 +462,7 @@
                         <td>${app.students.name} (${app.students.student_id})</td>
                         <td>${app.point_rules.name}</td>
                         <td>${app.custom_points || app.point_rules.points}</td>
-                        <td>${app.reason}</td>
+                        <td>${app.reason || ''}</td>
                         <td>${new Date(app.created_at).toLocaleString()}</td>
                         <td>
                             <button class="btn btn-success btn-sm" onclick="reviewApplication(${app.id}, 'approved')">通过</button>
@@ -483,7 +475,6 @@
                 pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核申请</td></tr>';
             }
 
-            // 已审核（最近20条）
             const { data: history } = await supabaseClient
                 .from('applications')
                 .select('*, students(name, student_id), point_rules(name, points)')
@@ -501,7 +492,7 @@
                         <td>${app.students.name} (${app.students.student_id})</td>
                         <td>${app.point_rules.name}</td>
                         <td>${app.custom_points || app.point_rules.points}</td>
-                        <td>${app.reason}</td>
+                        <td>${app.reason || ''}</td>
                         <td><span class="${statusClass}">${statusText}</span></td>
                         <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
                     `;
@@ -513,22 +504,58 @@
         }
 
         window.reviewApplication = async function(id, status) {
-            // 不记录审核人，只更新状态和审核时间
-            const updates = { status, reviewed_at: new Date() };
-            const { error } = await supabaseClient.from('applications').update(updates).eq('id', id);
-            if (error) { alert('操作失败：' + error.message); return; }
-            // 如果通过，增加积分
-            if (status === 'approved') {
-                const { data: app } = await supabaseClient
+            try {
+                console.log('审核申请:', id, status);
+                const { error: updateError } = await supabaseClient
                     .from('applications')
-                    .select('*, point_rules(points)')
-                    .eq('id', id)
-                    .single();
-                const points = app.custom_points || app.point_rules.points;
-                await supabaseClient.rpc('increment_student_points', { student_id: app.student_id, points });
+                    .update({ status, reviewed_at: new Date() })
+                    .eq('id', id);
+
+                if (updateError) {
+                    alert('状态更新失败：' + updateError.message);
+                    console.error(updateError);
+                    return;
+                }
+
+                if (status === 'approved') {
+                    const { data: app, error: fetchError } = await supabaseClient
+                        .from('applications')
+                        .select('student_id, custom_points, point_rules(points)')
+                        .eq('id', id)
+                        .single();
+
+                    if (fetchError) {
+                        alert('获取申请详情失败：' + fetchError.message);
+                        console.error(fetchError);
+                        return;
+                    }
+
+                    const points = app.custom_points || app.point_rules?.points;
+                    if (!points) {
+                        alert('无法确定分值');
+                        return;
+                    }
+
+                    const { error: rpcError } = await supabaseClient
+                        .rpc('increment_student_points', {
+                            student_id: app.student_id,
+                            points: points
+                        });
+
+                    if (rpcError) {
+                        alert('积分增加失败：' + rpcError.message);
+                        console.error(rpcError);
+                        return;
+                    }
+                }
+
+                loadApplications();
+                loadRank();
+                alert('审核完成');
+            } catch (err) {
+                alert('审核过程发生异常：' + err.message);
+                console.error(err);
             }
-            loadApplications();
-            loadRank();
         };
 
         // ---------- 积分排名 ----------
