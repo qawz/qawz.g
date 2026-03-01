@@ -165,11 +165,12 @@
             </div>
         </div>
 
+        <!-- 标签页（使用 onclick 直接调用） -->
         <div class="tabs">
-            <button class="tab-btn active" data-tab="rules">📋 加分规则</button>
-            <button class="tab-btn" data-tab="students">👥 学生管理</button>
-            <button class="tab-btn" data-tab="applications">📬 申请审核</button>
-            <button class="tab-btn" data-tab="rank">🏆 积分排名</button>
+            <button class="tab-btn active" onclick="switchTab('rules')">📋 加分规则</button>
+            <button class="tab-btn" onclick="switchTab('students')">👥 学生管理</button>
+            <button class="tab-btn" onclick="switchTab('applications')">📬 申请审核</button>
+            <button class="tab-btn" onclick="switchTab('rank')">🏆 积分排名</button>
         </div>
 
         <!-- 规则管理 -->
@@ -261,53 +262,45 @@
     </div>
 
     <script>
-        (function() {
-            // Supabase 配置
-            const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ---------- 全局函数挂载 ----------
+        window.switchTab = function(tab) {
+            console.log('切换标签页:', tab);
+            // 移除所有面板的 active 类
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            // 移除所有标签按钮的 active 类
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-            // 状态变量
-            let isTeacherLoggedIn = false;
-            let currentTab = 'rules';
+            // 激活目标面板
+            const targetPanel = document.getElementById(tab + 'Panel');
+            if (targetPanel) targetPanel.classList.add('active');
 
-            // ---------- 登录/登出 ----------
-            window.teacherLogin = async function() {
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('config')
-                        .select('admin_password')
-                        .eq('id', 1)
-                        .single();
-                    if (error || !data) throw error || new Error('无法验证');
-                    if (username === 'admin' && password === data.admin_password) {
-                        isTeacherLoggedIn = true;
-                        sessionStorage.setItem('teacherLoggedIn', 'true');
-                        document.getElementById('loginContainer').style.display = 'none';
-                        document.getElementById('mainContainer').style.display = 'block';
-                        loadRules();
-                        loadStudents();
-                        loadApplications();
-                        loadRank();
-                    } else {
-                        document.getElementById('loginError').innerText = '用户名或密码错误';
-                    }
-                } catch (err) {
-                    console.error('登录错误:', err);
-                    document.getElementById('loginError').innerText = '系统错误，请稍后重试';
-                }
-            };
+            // 激活对应的标签按钮
+            const targetBtn = document.querySelector(`.tab-btn[onclick*="'${tab}'"]`);
+            if (targetBtn) targetBtn.classList.add('active');
+        };
 
-            window.teacherLogout = function() {
-                sessionStorage.removeItem('teacherLoggedIn');
-                location.reload();
-            };
+        // ---------- Supabase 配置 ----------
+        const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            function checkTeacherLogin() {
-                if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
+        let isTeacherLoggedIn = false;
+        let currentTab = 'rules';
+
+        // 登录/登出
+        window.teacherLogin = async function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('config')
+                    .select('admin_password')
+                    .eq('id', 1)
+                    .single();
+                if (error || !data) throw error || new Error('无法验证');
+                if (username === 'admin' && password === data.admin_password) {
                     isTeacherLoggedIn = true;
+                    sessionStorage.setItem('teacherLoggedIn', 'true');
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('mainContainer').style.display = 'block';
                     loadRules();
@@ -315,435 +308,427 @@
                     loadApplications();
                     loadRank();
                 } else {
-                    document.getElementById('loginContainer').style.display = 'block';
-                    document.getElementById('mainContainer').style.display = 'none';
+                    document.getElementById('loginError').innerText = '用户名或密码错误';
                 }
+            } catch (err) {
+                console.error('登录错误:', err);
+                document.getElementById('loginError').innerText = '系统错误，请稍后重试';
             }
+        };
 
-            // ---------- 标签页切换 ----------
-            function switchTab(tab) {
-                console.log('切换到标签页:', tab);
-                currentTab = tab;
-                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-                document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-                document.getElementById(tab + 'Panel').classList.add('active');
+        window.teacherLogout = function() {
+            sessionStorage.removeItem('teacherLoggedIn');
+            location.reload();
+        };
+
+        function checkTeacherLogin() {
+            if (sessionStorage.getItem('teacherLoggedIn') === 'true') {
+                isTeacherLoggedIn = true;
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                loadRules();
+                loadStudents();
+                loadApplications();
+                loadRank();
+            } else {
+                document.getElementById('loginContainer').style.display = 'block';
+                document.getElementById('mainContainer').style.display = 'none';
             }
+        }
 
-            // ---------- 规则管理 ----------
-            async function loadRules() {
-                console.log('加载规则列表');
-                try {
-                    const { data: rules, error } = await supabaseClient
-                        .from('point_rules')
-                        .select('*')
-                        .order('id');
-                    if (error) throw error;
-                    const tbody = document.getElementById('rulesList');
-                    tbody.innerHTML = '';
-                    if (!rules || rules.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无规则</td></tr>';
-                        return;
-                    }
-                    rules.forEach(rule => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${rule.name}</td>
-                            <td>${rule.description || '-'}</td>
-                            <td>${rule.points}</td>
-                            <td><span style="background:${rule.enabled ? '#d4edda' : '#f8d7da'}; color:${rule.enabled ? '#155724' : '#721c24'}; padding:4px 10px; border-radius:20px;">${rule.enabled ? '启用' : '禁用'}</span></td>
-                            <td>
-                                <button class="btn btn-success btn-sm" data-action="editRule" data-id="${rule.id}">编辑</button>
-                                <button class="btn btn-warning btn-sm" data-action="toggleRule" data-id="${rule.id}">${rule.enabled ? '禁用' : '启用'}</button>
-                                <button class="btn btn-danger btn-sm" data-action="deleteRule" data-id="${rule.id}">删除</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } catch (err) {
-                    console.error('加载规则失败:', err);
-                    alert('加载规则失败：' + err.message);
+        // ---------- 规则管理 ----------
+        async function loadRules() {
+            console.log('加载规则列表');
+            try {
+                const { data: rules, error } = await supabaseClient
+                    .from('point_rules')
+                    .select('*')
+                    .order('id');
+                if (error) throw error;
+                const tbody = document.getElementById('rulesList');
+                tbody.innerHTML = '';
+                if (!rules || rules.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无规则</td></tr>';
+                    return;
                 }
+                rules.forEach(rule => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${rule.name}</td>
+                        <td>${rule.description || '-'}</td>
+                        <td>${rule.points}</td>
+                        <td><span style="background:${rule.enabled ? '#d4edda' : '#f8d7da'}; color:${rule.enabled ? '#155724' : '#721c24'}; padding:4px 10px; border-radius:20px;">${rule.enabled ? '启用' : '禁用'}</span></td>
+                        <td>
+                            <button class="btn btn-success btn-sm" data-action="editRule" data-id="${rule.id}">编辑</button>
+                            <button class="btn btn-warning btn-sm" data-action="toggleRule" data-id="${rule.id}">${rule.enabled ? '禁用' : '启用'}</button>
+                            <button class="btn btn-danger btn-sm" data-action="deleteRule" data-id="${rule.id}">删除</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载规则失败:', err);
+                alert('加载规则失败：' + err.message);
             }
+        }
 
-            // 编辑规则
-            window.editRule = async function(id) {
-                console.log('编辑规则 ID:', id);
-                try {
-                    const { data: rule, error } = await supabaseClient
-                        .from('point_rules')
-                        .select('*')
-                        .eq('id', id)
-                        .single();
-                    if (error) throw error;
-                    document.getElementById('ruleModalTitle').innerText = '编辑规则';
-                    document.getElementById('ruleId').value = rule.id;
-                    document.getElementById('ruleName').value = rule.name;
-                    document.getElementById('ruleDesc').value = rule.description || '';
-                    document.getElementById('rulePoints').value = rule.points;
-                    document.getElementById('ruleModal').style.display = 'flex';
-                } catch (err) {
-                    console.error('编辑规则失败:', err);
-                    alert('获取规则失败：' + err.message);
-                }
-            };
+        // 编辑规则
+        window.editRule = async function(id) {
+            console.log('编辑规则 ID:', id);
+            try {
+                const { data: rule, error } = await supabaseClient
+                    .from('point_rules')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+                document.getElementById('ruleModalTitle').innerText = '编辑规则';
+                document.getElementById('ruleId').value = rule.id;
+                document.getElementById('ruleName').value = rule.name;
+                document.getElementById('ruleDesc').value = rule.description || '';
+                document.getElementById('rulePoints').value = rule.points;
+                document.getElementById('ruleModal').style.display = 'flex';
+            } catch (err) {
+                console.error('编辑规则失败:', err);
+                alert('获取规则失败：' + err.message);
+            }
+        };
 
-            // 切换规则状态
-            window.toggleRule = async function(id) {
-                console.log('切换规则状态 ID:', id);
-                try {
-                    const { data: rule, error } = await supabaseClient
-                        .from('point_rules')
-                        .select('enabled')
-                        .eq('id', id)
-                        .single();
-                    if (error) throw error;
-                    const { error: updateError } = await supabaseClient
-                        .from('point_rules')
-                        .update({ enabled: !rule.enabled })
-                        .eq('id', id);
-                    if (updateError) throw updateError;
-                    loadRules();
-                } catch (err) {
-                    console.error('切换状态失败:', err);
-                    alert('切换失败：' + err.message);
-                }
-            };
+        // 切换规则状态
+        window.toggleRule = async function(id) {
+            console.log('切换规则状态 ID:', id);
+            try {
+                const { data: rule, error } = await supabaseClient
+                    .from('point_rules')
+                    .select('enabled')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+                const { error: updateError } = await supabaseClient
+                    .from('point_rules')
+                    .update({ enabled: !rule.enabled })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+                loadRules();
+            } catch (err) {
+                console.error('切换状态失败:', err);
+                alert('切换失败：' + err.message);
+            }
+        };
 
-            // 删除规则
-            window.deleteRule = async function(id) {
-                console.log('删除规则 ID:', id);
-                if (!confirm('确定删除？')) return;
-                try {
+        // 删除规则
+        window.deleteRule = async function(id) {
+            console.log('删除规则 ID:', id);
+            if (!confirm('确定删除？')) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('point_rules')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                loadRules();
+            } catch (err) {
+                console.error('删除失败:', err);
+                alert('删除失败：' + err.message);
+            }
+        };
+
+        // 保存规则（新建/编辑）
+        window.saveRule = async function() {
+            const id = document.getElementById('ruleId').value;
+            const name = document.getElementById('ruleName').value.trim();
+            const desc = document.getElementById('ruleDesc').value.trim();
+            const points = parseInt(document.getElementById('rulePoints').value);
+            if (!name || !points) {
+                alert('请填写名称和分值');
+                return;
+            }
+            const data = { name, description: desc, points, enabled: true };
+            try {
+                if (id) {
                     const { error } = await supabaseClient
                         .from('point_rules')
-                        .delete()
+                        .update(data)
                         .eq('id', id);
                     if (error) throw error;
-                    loadRules();
-                } catch (err) {
-                    console.error('删除失败:', err);
-                    alert('删除失败：' + err.message);
-                }
-            };
-
-            // 保存规则（新建/编辑）
-            window.saveRule = async function() {
-                const id = document.getElementById('ruleId').value;
-                const name = document.getElementById('ruleName').value.trim();
-                const desc = document.getElementById('ruleDesc').value.trim();
-                const points = parseInt(document.getElementById('rulePoints').value);
-                if (!name || !points) {
-                    alert('请填写名称和分值');
-                    return;
-                }
-                const data = { name, description: desc, points, enabled: true };
-                try {
-                    if (id) {
-                        const { error } = await supabaseClient
-                            .from('point_rules')
-                            .update(data)
-                            .eq('id', id);
-                        if (error) throw error;
-                    } else {
-                        const { error } = await supabaseClient
-                            .from('point_rules')
-                            .insert([data]);
-                        if (error) throw error;
-                    }
-                    closeRuleModal();
-                    loadRules();
-                } catch (err) {
-                    console.error('保存规则失败:', err);
-                    alert('保存失败：' + err.message);
-                }
-            };
-
-            // 关闭规则模态框
-            window.closeRuleModal = function() {
-                document.getElementById('ruleModal').style.display = 'none';
-            };
-
-            // ---------- 学生管理 ----------
-            async function loadStudents() {
-                console.log('加载学生列表');
-                try {
-                    const { data: students, error } = await supabaseClient
-                        .from('students')
-                        .select('*')
-                        .order('student_id');
+                } else {
+                    const { error } = await supabaseClient
+                        .from('point_rules')
+                        .insert([data]);
                     if (error) throw error;
-                    const tbody = document.getElementById('studentsList');
-                    tbody.innerHTML = '';
-                    students.forEach(s => {
+                }
+                closeRuleModal();
+                loadRules();
+            } catch (err) {
+                console.error('保存规则失败:', err);
+                alert('保存失败：' + err.message);
+            }
+        };
+
+        // 关闭规则模态框
+        window.closeRuleModal = function() {
+            document.getElementById('ruleModal').style.display = 'none';
+        };
+
+        // ---------- 学生管理 ----------
+        async function loadStudents() {
+            console.log('加载学生列表');
+            try {
+                const { data: students, error } = await supabaseClient
+                    .from('students')
+                    .select('*')
+                    .order('student_id');
+                if (error) throw error;
+                const tbody = document.getElementById('studentsList');
+                tbody.innerHTML = '';
+                students.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${s.student_id}</td>
+                        <td>${s.name}</td>
+                        <td>${s.class || '1班'}</td>
+                        <td>${s.total_points}</td>
+                        <td><button class="btn btn-success btn-sm" data-action="editStudent" data-id="${s.id}" data-name="${s.name}" data-class="${s.class || ''}">编辑</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载学生失败:', err);
+                alert('加载学生失败：' + err.message);
+            }
+        }
+
+        window.editStudent = function(id, name, className) {
+            console.log('编辑学生:', id, name, className);
+            document.getElementById('editStudentId').value = id;
+            document.getElementById('editStudentName').value = name;
+            document.getElementById('editStudentClass').value = className;
+            document.getElementById('editStudentPoints').value = 0;
+            document.getElementById('studentModal').style.display = 'flex';
+        };
+
+        window.closeStudentModal = function() {
+            document.getElementById('studentModal').style.display = 'none';
+        };
+
+        window.saveStudent = async function() {
+            const id = document.getElementById('editStudentId').value;
+            const name = document.getElementById('editStudentName').value.trim();
+            const className = document.getElementById('editStudentClass').value.trim();
+            const pointsAdjust = parseInt(document.getElementById('editStudentPoints').value) || 0;
+
+            if (!name) {
+                alert('姓名不能为空');
+                return;
+            }
+            try {
+                // 更新基本信息
+                const { error: updateError } = await supabaseClient
+                    .from('students')
+                    .update({ name, class: className })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+
+                // 调整积分
+                if (pointsAdjust !== 0) {
+                    const { error: rpcError } = await supabaseClient
+                        .rpc('increment_student_points', { student_id: id, points: pointsAdjust });
+                    if (rpcError) throw rpcError;
+                }
+
+                closeStudentModal();
+                loadStudents();
+                loadRank();
+            } catch (err) {
+                console.error('保存学生失败:', err);
+                alert('保存失败：' + err.message);
+            }
+        };
+
+        // ---------- 申请审核 ----------
+        async function loadApplications() {
+            console.log('加载申请列表');
+            try {
+                // 待审核
+                const { data: pending, error: pendingError } = await supabaseClient
+                    .from('applications')
+                    .select('*, students(name, student_id), point_rules(name, points)')
+                    .eq('status', 'pending')
+                    .order('created_at');
+                if (pendingError) throw pendingError;
+                const pendingTbody = document.getElementById('pendingList');
+                pendingTbody.innerHTML = '';
+                if (pending && pending.length > 0) {
+                    pending.forEach(app => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${s.student_id}</td>
-                            <td>${s.name}</td>
-                            <td>${s.class || '1班'}</td>
-                            <td>${s.total_points}</td>
-                            <td><button class="btn btn-success btn-sm" data-action="editStudent" data-id="${s.id}" data-name="${s.name}" data-class="${s.class || ''}">编辑</button></td>
+                            <td>${app.students.name} (${app.students.student_id})</td>
+                            <td>${app.point_rules.name}</td>
+                            <td>${app.custom_points || app.point_rules.points}</td>
+                            <td>${app.reason || ''}</td>
+                            <td>${new Date(app.created_at).toLocaleString()}</td>
+                            <td>
+                                <button class="btn btn-success btn-sm" data-action="reviewApp" data-id="${app.id}" data-status="approved">通过</button>
+                                <button class="btn btn-danger btn-sm" data-action="reviewApp" data-id="${app.id}" data-status="rejected">拒绝</button>
+                            </td>
                         `;
-                        tbody.appendChild(tr);
+                        pendingTbody.appendChild(tr);
                     });
-                } catch (err) {
-                    console.error('加载学生失败:', err);
-                    alert('加载学生失败：' + err.message);
+                } else {
+                    pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核申请</td></tr>';
                 }
-            }
 
-            window.editStudent = function(id, name, className) {
-                console.log('编辑学生:', id, name, className);
-                document.getElementById('editStudentId').value = id;
-                document.getElementById('editStudentName').value = name;
-                document.getElementById('editStudentClass').value = className;
-                document.getElementById('editStudentPoints').value = 0;
-                document.getElementById('studentModal').style.display = 'flex';
-            };
-
-            window.closeStudentModal = function() {
-                document.getElementById('studentModal').style.display = 'none';
-            };
-
-            window.saveStudent = async function() {
-                const id = document.getElementById('editStudentId').value;
-                const name = document.getElementById('editStudentName').value.trim();
-                const className = document.getElementById('editStudentClass').value.trim();
-                const pointsAdjust = parseInt(document.getElementById('editStudentPoints').value) || 0;
-
-                if (!name) {
-                    alert('姓名不能为空');
-                    return;
-                }
-                try {
-                    // 更新基本信息
-                    const { error: updateError } = await supabaseClient
-                        .from('students')
-                        .update({ name, class: className })
-                        .eq('id', id);
-                    if (updateError) throw updateError;
-
-                    // 调整积分
-                    if (pointsAdjust !== 0) {
-                        const { error: rpcError } = await supabaseClient
-                            .rpc('increment_student_points', { student_id: id, points: pointsAdjust });
-                        if (rpcError) throw rpcError;
-                    }
-
-                    closeStudentModal();
-                    loadStudents();
-                    loadRank();
-                } catch (err) {
-                    console.error('保存学生失败:', err);
-                    alert('保存失败：' + err.message);
-                }
-            };
-
-            // ---------- 申请审核 ----------
-            async function loadApplications() {
-                console.log('加载申请列表');
-                try {
-                    // 待审核
-                    const { data: pending, error: pendingError } = await supabaseClient
-                        .from('applications')
-                        .select('*, students(name, student_id), point_rules(name, points)')
-                        .eq('status', 'pending')
-                        .order('created_at');
-                    if (pendingError) throw pendingError;
-                    const pendingTbody = document.getElementById('pendingList');
-                    pendingTbody.innerHTML = '';
-                    if (pending && pending.length > 0) {
-                        pending.forEach(app => {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${app.students.name} (${app.students.student_id})</td>
-                                <td>${app.point_rules.name}</td>
-                                <td>${app.custom_points || app.point_rules.points}</td>
-                                <td>${app.reason || ''}</td>
-                                <td>${new Date(app.created_at).toLocaleString()}</td>
-                                <td>
-                                    <button class="btn btn-success btn-sm" data-action="reviewApp" data-id="${app.id}" data-status="approved">通过</button>
-                                    <button class="btn btn-danger btn-sm" data-action="reviewApp" data-id="${app.id}" data-status="rejected">拒绝</button>
-                                </td>
-                            `;
-                            pendingTbody.appendChild(tr);
-                        });
-                    } else {
-                        pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核申请</td></tr>';
-                    }
-
-                    // 已审核（最近20条）
-                    const { data: history, error: historyError } = await supabaseClient
-                        .from('applications')
-                        .select('*, students(name, student_id), point_rules(name, points)')
-                        .neq('status', 'pending')
-                        .order('reviewed_at', { ascending: false })
-                        .limit(20);
-                    if (historyError) throw historyError;
-                    const historyTbody = document.getElementById('historyList');
-                    historyTbody.innerHTML = '';
-                    if (history && history.length > 0) {
-                        history.forEach(app => {
-                            const tr = document.createElement('tr');
-                            const statusClass = `status-${app.status}`;
-                            const statusText = app.status === 'approved' ? '已通过' : '已拒绝';
-                            tr.innerHTML = `
-                                <td>${app.students.name} (${app.students.student_id})</td>
-                                <td>${app.point_rules.name}</td>
-                                <td>${app.custom_points || app.point_rules.points}</td>
-                                <td>${app.reason || ''}</td>
-                                <td><span class="${statusClass}">${statusText}</span></td>
-                                <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
-                            `;
-                            historyTbody.appendChild(tr);
-                        });
-                    } else {
-                        historyTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无历史记录</td></tr>';
-                    }
-                } catch (err) {
-                    console.error('加载申请失败:', err);
-                    alert('加载申请失败：' + err.message);
-                }
-            }
-
-            window.reviewApplication = async function(id, status) {
-                console.log('审核申请:', id, status);
-                try {
-                    const { error: updateError } = await supabaseClient
-                        .from('applications')
-                        .update({ status, reviewed_at: new Date() })
-                        .eq('id', id);
-                    if (updateError) throw updateError;
-
-                    if (status === 'approved') {
-                        const { data: app, error: fetchError } = await supabaseClient
-                            .from('applications')
-                            .select('student_id, custom_points, point_rules(points)')
-                            .eq('id', id)
-                            .single();
-                        if (fetchError) throw fetchError;
-
-                        const points = app.custom_points || app.point_rules?.points;
-                        if (!points) throw new Error('无法确定分值');
-
-                        const { error: rpcError } = await supabaseClient
-                            .rpc('increment_student_points', {
-                                student_id: app.student_id,
-                                points: points
-                            });
-                        if (rpcError) throw rpcError;
-                    }
-
-                    loadApplications();
-                    loadRank();
-                } catch (err) {
-                    console.error('审核失败:', err);
-                    alert('审核失败：' + err.message);
-                }
-            };
-
-            // ---------- 积分排名 ----------
-            async function loadRank() {
-                console.log('加载积分排名');
-                try {
-                    const { data: students, error } = await supabaseClient
-                        .from('students')
-                        .select('student_id, name, class, total_points')
-                        .order('total_points', { ascending: false });
-                    if (error) throw error;
-                    const tbody = document.getElementById('rankList');
-                    tbody.innerHTML = '';
-                    students.forEach((s, idx) => {
+                // 已审核（最近20条）
+                const { data: history, error: historyError } = await supabaseClient
+                    .from('applications')
+                    .select('*, students(name, student_id), point_rules(name, points)')
+                    .neq('status', 'pending')
+                    .order('reviewed_at', { ascending: false })
+                    .limit(20);
+                if (historyError) throw historyError;
+                const historyTbody = document.getElementById('historyList');
+                historyTbody.innerHTML = '';
+                if (history && history.length > 0) {
+                    history.forEach(app => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `<td>${idx+1}</td><td>${s.student_id}</td><td>${s.name}</td><td>${s.class || '1班'}</td><td>${s.total_points}</td>`;
-                        tbody.appendChild(tr);
+                        const statusClass = `status-${app.status}`;
+                        const statusText = app.status === 'approved' ? '已通过' : '已拒绝';
+                        tr.innerHTML = `
+                            <td>${app.students.name} (${app.students.student_id})</td>
+                            <td>${app.point_rules.name}</td>
+                            <td>${app.custom_points || app.point_rules.points}</td>
+                            <td>${app.reason || ''}</td>
+                            <td><span class="${statusClass}">${statusText}</span></td>
+                            <td>${app.reviewed_at ? new Date(app.reviewed_at).toLocaleString() : ''}</td>
+                        `;
+                        historyTbody.appendChild(tr);
                     });
-                } catch (err) {
-                    console.error('加载排名失败:', err);
-                    alert('加载排名失败：' + err.message);
+                } else {
+                    historyTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无历史记录</td></tr>';
+                }
+            } catch (err) {
+                console.error('加载申请失败:', err);
+                alert('加载申请失败：' + err.message);
+            }
+        }
+
+        window.reviewApplication = async function(id, status) {
+            console.log('审核申请:', id, status);
+            try {
+                const { error: updateError } = await supabaseClient
+                    .from('applications')
+                    .update({ status, reviewed_at: new Date() })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+
+                if (status === 'approved') {
+                    const { data: app, error: fetchError } = await supabaseClient
+                        .from('applications')
+                        .select('student_id, custom_points, point_rules(points)')
+                        .eq('id', id)
+                        .single();
+                    if (fetchError) throw fetchError;
+
+                    const points = app.custom_points || app.point_rules?.points;
+                    if (!points) throw new Error('无法确定分值');
+
+                    const { error: rpcError } = await supabaseClient
+                        .rpc('increment_student_points', {
+                            student_id: app.student_id,
+                            points: points
+                        });
+                    if (rpcError) throw rpcError;
+                }
+
+                loadApplications();
+                loadRank();
+            } catch (err) {
+                console.error('审核失败:', err);
+                alert('审核失败：' + err.message);
+            }
+        };
+
+        // ---------- 积分排名 ----------
+        async function loadRank() {
+            console.log('加载积分排名');
+            try {
+                const { data: students, error } = await supabaseClient
+                    .from('students')
+                    .select('student_id, name, class, total_points')
+                    .order('total_points', { ascending: false });
+                if (error) throw error;
+                const tbody = document.getElementById('rankList');
+                tbody.innerHTML = '';
+                students.forEach((s, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${idx+1}</td><td>${s.student_id}</td><td>${s.name}</td><td>${s.class || '1班'}</td><td>${s.total_points}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载排名失败:', err);
+                alert('加载排名失败：' + err.message);
+            }
+        }
+
+        // ---------- 静态按钮事件绑定 ----------
+        function bindStaticButtons() {
+            document.getElementById('addRuleBtn').addEventListener('click', function() {
+                document.getElementById('ruleModalTitle').innerText = '新建规则';
+                document.getElementById('ruleId').value = '';
+                document.getElementById('ruleName').value = '';
+                document.getElementById('ruleDesc').value = '';
+                document.getElementById('rulePoints').value = 5;
+                document.getElementById('ruleModal').style.display = 'flex';
+            });
+
+            document.getElementById('saveRuleBtn').addEventListener('click', saveRule);
+            document.getElementById('closeRuleModalBtn').addEventListener('click', closeRuleModal);
+            document.getElementById('saveStudentBtn').addEventListener('click', saveStudent);
+            document.getElementById('closeStudentModalBtn').addEventListener('click', closeStudentModal);
+
+            // 搜索学生输入事件
+            document.getElementById('studentSearch').addEventListener('input', function(e) {
+                const kw = e.target.value.toLowerCase();
+                document.querySelectorAll('#studentsList tr').forEach(tr => {
+                    tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                });
+            });
+        }
+
+        // 动态按钮事件委托
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            const action = target.getAttribute('data-action');
+            if (action) {
+                e.preventDefault();
+                console.log('事件委托触发:', action, target.dataset);
+                switch (action) {
+                    case 'editRule':
+                        editRule(target.dataset.id);
+                        break;
+                    case 'toggleRule':
+                        toggleRule(target.dataset.id);
+                        break;
+                    case 'deleteRule':
+                        deleteRule(target.dataset.id);
+                        break;
+                    case 'editStudent':
+                        editStudent(target.dataset.id, target.dataset.name, target.dataset.class);
+                        break;
+                    case 'reviewApp':
+                        reviewApplication(target.dataset.id, target.dataset.status);
+                        break;
+                    default:
+                        console.warn('未知动作:', action);
                 }
             }
+        });
 
-            // ---------- 全局事件委托 ----------
-            function setupGlobalEventDelegation() {
-                console.log('设置全局事件委托');
-                document.addEventListener('click', function(e) {
-                    const target = e.target.closest('button');
-                    if (!target) return;
-
-                    const action = target.getAttribute('data-action');
-                    if (action) {
-                        e.preventDefault();
-                        console.log('事件委托触发:', action, target.dataset);
-                        switch (action) {
-                            case 'editRule':
-                                editRule(target.dataset.id);
-                                break;
-                            case 'toggleRule':
-                                toggleRule(target.dataset.id);
-                                break;
-                            case 'deleteRule':
-                                deleteRule(target.dataset.id);
-                                break;
-                            case 'editStudent':
-                                editStudent(target.dataset.id, target.dataset.name, target.dataset.class);
-                                break;
-                            case 'reviewApp':
-                                reviewApplication(target.dataset.id, target.dataset.status);
-                                break;
-                            default:
-                                console.warn('未知动作:', action);
-                        }
-                    } else {
-                        // 处理静态按钮 ID
-                        const id = target.id;
-                        if (id) {
-                            console.log('静态按钮点击:', id);
-                            switch (id) {
-                                case 'addRuleBtn':
-                                    document.getElementById('ruleModalTitle').innerText = '新建规则';
-                                    document.getElementById('ruleId').value = '';
-                                    document.getElementById('ruleName').value = '';
-                                    document.getElementById('ruleDesc').value = '';
-                                    document.getElementById('rulePoints').value = 5;
-                                    document.getElementById('ruleModal').style.display = 'flex';
-                                    break;
-                                case 'saveRuleBtn':
-                                    saveRule();
-                                    break;
-                                case 'closeRuleModalBtn':
-                                    closeRuleModal();
-                                    break;
-                                case 'saveStudentBtn':
-                                    saveStudent();
-                                    break;
-                                case 'closeStudentModalBtn':
-                                    closeStudentModal();
-                                    break;
-                                default:
-                                    // 标签页切换通过 data-tab 处理
-                                    const tabBtn = target.closest('.tab-btn');
-                                    if (tabBtn && tabBtn.dataset.tab) {
-                                        switchTab(tabBtn.dataset.tab);
-                                    }
-                            }
-                        }
-                    }
-                });
-
-                // 搜索学生输入事件
-                document.getElementById('studentSearch').addEventListener('input', function(e) {
-                    const kw = e.target.value.toLowerCase();
-                    document.querySelectorAll('#studentsList tr').forEach(tr => {
-                        tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
-                    });
-                });
-            }
-
-            // ---------- 初始化 ----------
-            checkTeacherLogin();
-            setupGlobalEventDelegation();
-        })();
+        // ---------- 初始化 ----------
+        checkTeacherLogin();
+        bindStaticButtons();
     </script>
 </body>
 </html>
