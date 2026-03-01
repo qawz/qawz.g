@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教师端 · 班级管理</title>
+    <title>教师管理后台 · 审核申请 · 管理积分</title>
+    <meta name="description" content="教师可管理加分/扣分规则、审核学生申请、查看积分排名，支持批量操作和积分清零。">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 样式完整保留，与之前一致，为节省篇幅此处省略，实际使用时请保留之前完整样式 */
+        /* 样式与之前相同，为节省篇幅此处省略，请保留你已有的完整样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -370,7 +371,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // ========== 登录/登出（直接定义为全局函数）==========
+        // ========== 登录/登出 ==========
         async function teacherLogin() {
             console.log('登录函数被调用');
             const username = document.getElementById('username').value;
@@ -809,6 +810,7 @@
             }
         }
 
+        // 批量审核
         async function batchReview(status) {
             const checkboxes = document.querySelectorAll('.pending-checkbox:checked');
             if (checkboxes.length === 0) {
@@ -825,19 +827,31 @@
 
             for (const id of ids) {
                 try {
+                    // 更新申请状态
                     const { error: updateError } = await supabaseClient
                         .from('applications')
                         .update({ status, reviewed_at: new Date() })
                         .eq('id', id);
                     if (updateError) throw updateError;
 
+                    // 如果是通过，调整积分
                     if (status === 'approved') {
+                        // 获取申请详情（明确选择需要的字段，避免歧义）
                         const { data: app, error: fetchError } = await supabaseClient
                             .from('applications')
-                            .select('student_id, custom_points, point_rules(points, type)')
+                            .select(`
+                                student_id,
+                                custom_points,
+                                point_rules (
+                                    points,
+                                    type
+                                )
+                            `)
                             .eq('id', id)
                             .single();
+                        
                         if (fetchError) throw fetchError;
+                        if (!app) throw new Error('未找到申请记录');
 
                         const points = app.custom_points || app.point_rules?.points;
                         if (!points) throw new Error('无法确定分值');
@@ -866,21 +880,35 @@
             if (selectAll) selectAll.checked = false;
         }
 
+        // 单个审核
         async function reviewApplication(id, status) {
+            console.log('单个审核:', id, status);
             try {
+                // 更新申请状态
                 const { error: updateError } = await supabaseClient
                     .from('applications')
                     .update({ status, reviewed_at: new Date() })
                     .eq('id', id);
                 if (updateError) throw updateError;
 
+                // 如果是通过，调整积分
                 if (status === 'approved') {
+                    // 获取申请详情（明确选择需要的字段，避免歧义）
                     const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
-                        .select('student_id, custom_points, point_rules(points, type)')
+                        .select(`
+                            student_id,
+                            custom_points,
+                            point_rules (
+                                points,
+                                type
+                            )
+                        `)
                         .eq('id', id)
                         .single();
+                    
                     if (fetchError) throw fetchError;
+                    if (!app) throw new Error('未找到申请记录');
 
                     const points = app.custom_points || app.point_rules?.points;
                     if (!points) throw new Error('无法确定分值');
@@ -898,10 +926,12 @@
                 loadApplications();
                 loadRank();
             } catch (err) {
+                console.error('审核失败:', err);
                 alert('审核失败：' + err.message);
             }
         }
 
+        // 删除历史记录
         async function deleteHistory(id) {
             if (!confirm('确定删除此记录吗？此操作不会影响学生积分。')) return;
             try {
