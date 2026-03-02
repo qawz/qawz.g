@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教师管理后台 · 审核申请 · 管理积分</title>
-    <meta name="description" content="教师可管理加分/扣分规则、审核学生申请、查看积分排名，支持批量操作和积分清零。">
+    <title>教师管理后台 · 班级优化大师</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 样式与之前相同，此处省略以节省篇幅，实际使用时请复制之前的完整样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -101,6 +99,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .btn {
             padding: 8px 16px;
@@ -113,6 +113,7 @@
         .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
         .btn-warning { background: #ffc107; color: #333; }
+        .btn-info { background: #17a2b8; color: white; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -173,10 +174,21 @@
             border-radius: 20px;
             font-size: 0.85rem;
         }
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .filter-bar select, .filter-bar input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
-    <!-- 登录部分，与之前相同，完整保留 -->
     <div id="loginContainer" class="login-container">
         <h2>教师登录</h2>
         <input type="text" id="username" placeholder="用户名" value="admin">
@@ -225,16 +237,24 @@
             </div>
         </div>
 
-        <!-- 学生管理 -->
+        <!-- 学生管理（增强版） -->
         <div id="studentsPanel" class="panel">
             <div class="card">
                 <div class="card-header">
                     <h2>学生列表</h2>
                     <div>
-                        <button class="btn btn-warning" onclick="toggleSelectAll('student')">全选/取消全选</button>
-                        <button class="btn btn-danger" onclick="clearSelectedPoints()">积分清零（选中）</button>
-                        <input type="text" id="studentSearch" class="search-box" placeholder="搜索学号或姓名">
+                        <button class="btn btn-success" onclick="showAddStudentModal()">➕ 添加学生</button>
+                        <button class="btn btn-info" onclick="exportStudentsCSV()">📥 导出CSV</button>
                     </div>
+                </div>
+                <div class="filter-bar">
+                    <select id="classFilter" onchange="filterStudents()">
+                        <option value="">全部班级</option>
+                    </select>
+                    <input type="text" id="studentSearch" placeholder="搜索学号或姓名" oninput="filterStudents()">
+                    <button class="btn btn-warning" onclick="toggleSelectAll('student')">全选/取消全选</button>
+                    <button class="btn btn-danger" onclick="clearSelectedPoints()">积分清零（选中）</button>
+                    <button class="btn btn-primary" onclick="batchSetClass()">批量设置班级</button>
                 </div>
                 <table>
                     <thead>
@@ -350,7 +370,7 @@
         </div>
     </div>
 
-    <!-- 学生编辑模态框 -->
+    <!-- 学生编辑模态框（编辑单个学生） -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <h3>编辑学生</h3>
@@ -365,11 +385,39 @@
         </div>
     </div>
 
+    <!-- 添加学生模态框 -->
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content">
+            <h3>添加学生</h3>
+            <label>学号</label><input type="number" id="newStudentId" placeholder="1-45" min="1" max="45">
+            <label>姓名</label><input type="text" id="newStudentName" placeholder="姓名">
+            <label>班级</label><input type="text" id="newStudentClass" placeholder="班级（如 1班）" value="1班">
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-success" onclick="addStudent()">添加</button>
+                <button class="btn btn-danger" onclick="closeAddStudentModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量设置班级模态框 -->
+    <div id="batchClassModal" class="modal">
+        <div class="modal-content">
+            <h3>批量设置班级</h3>
+            <p>已选中 <span id="selectedCount">0</span> 名学生</p>
+            <label>新班级</label><input type="text" id="batchClassName" placeholder="如 1班">
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-success" onclick="batchSetClassConfirm()">确定</button>
+                <button class="btn btn-danger" onclick="closeBatchClassModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // ========== Supabase 配置 ==========
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allStudents = []; // 存储所有学生数据，用于筛选
 
         // ========== 登录/登出 ==========
         async function teacherLogin() {
@@ -418,7 +466,6 @@
             }
         }
 
-        // ========== 标签页切换 ==========
         function switchTab(tab) {
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -558,7 +605,7 @@
             document.getElementById('ruleModal').style.display = 'none';
         }
 
-        // ========== 学生管理 ==========
+        // ========== 学生管理（增强版）==========
         async function loadStudents() {
             const tbody = document.getElementById('studentsList');
             if (!tbody) return;
@@ -568,29 +615,166 @@
                     .select('*')
                     .order('student_id');
                 if (error) throw error;
-                tbody.innerHTML = '';
-                if (!students || students.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无学生数据</td></tr>';
-                    return;
-                }
-                students.forEach(s => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="checkbox-col"><input type="checkbox" class="student-checkbox" value="${s.id}"></td>
-                        <td>${s.student_id}</td>
-                        <td>${s.name}</td>
-                        <td>${s.class || '1班'}</td>
-                        <td>${s.total_points}</td>
-                        <td><button class="btn btn-success btn-sm" onclick="editStudent('${s.id}', '${s.name}', '${s.class || ''}')">编辑</button></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                allStudents = students || [];
+                renderStudentList(allStudents);
+                populateClassFilter();
             } catch (err) {
                 console.error('加载学生失败:', err);
                 tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
             }
         }
 
+        function renderStudentList(students) {
+            const tbody = document.getElementById('studentsList');
+            tbody.innerHTML = '';
+            if (!students || students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无学生</td></tr>';
+                return;
+            }
+            students.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="checkbox-col"><input type="checkbox" class="student-checkbox" value="${s.id}"></td>
+                    <td>${s.student_id}</td>
+                    <td>${s.name}</td>
+                    <td>${s.class || '未设置'}</td>
+                    <td>${s.total_points}</td>
+                    <td><button class="btn btn-success btn-sm" onclick="editStudent('${s.id}', '${s.name}', '${s.class || ''}')">编辑</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateClassFilter() {
+            const classes = [...new Set(allStudents.map(s => s.class).filter(Boolean))];
+            const select = document.getElementById('classFilter');
+            select.innerHTML = '<option value="">全部班级</option>';
+            classes.sort().forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls;
+                option.textContent = cls;
+                select.appendChild(option);
+            });
+        }
+
+        function filterStudents() {
+            const keyword = document.getElementById('studentSearch').value.toLowerCase();
+            const selectedClass = document.getElementById('classFilter').value;
+            const filtered = allStudents.filter(s => {
+                const matchKeyword = s.name.toLowerCase().includes(keyword) || s.student_id.toString().includes(keyword);
+                const matchClass = selectedClass === '' || s.class === selectedClass;
+                return matchKeyword && matchClass;
+            });
+            renderStudentList(filtered);
+        }
+
+        // 添加学生
+        function showAddStudentModal() {
+            document.getElementById('addStudentModal').style.display = 'flex';
+        }
+        function closeAddStudentModal() {
+            document.getElementById('addStudentModal').style.display = 'none';
+        }
+        async function addStudent() {
+            const studentId = document.getElementById('newStudentId').value.trim();
+            const name = document.getElementById('newStudentName').value.trim();
+            const className = document.getElementById('newStudentClass').value.trim() || '1班';
+            if (!studentId || !name) {
+                alert('学号和姓名不能为空');
+                return;
+            }
+            const numId = parseInt(studentId);
+            if (isNaN(numId) || numId < 1 || numId > 45) {
+                alert('学号必须在1-45之间');
+                return;
+            }
+            try {
+                // 检查学号是否已存在
+                const { data: existing } = await supabaseClient
+                    .from('students')
+                    .select('id')
+                    .eq('student_id', numId)
+                    .maybeSingle();
+                if (existing) {
+                    alert('该学号已存在');
+                    return;
+                }
+                const { error } = await supabaseClient
+                    .from('students')
+                    .insert({
+                        student_id: numId,
+                        name: name,
+                        class: className,
+                        total_points: 0
+                    });
+                if (error) throw error;
+                alert('学生添加成功');
+                closeAddStudentModal();
+                loadStudents();
+                loadRank();
+                // 清空输入
+                document.getElementById('newStudentId').value = '';
+                document.getElementById('newStudentName').value = '';
+                document.getElementById('newStudentClass').value = '1班';
+            } catch (err) {
+                alert('添加失败：' + err.message);
+            }
+        }
+
+        // 批量设置班级
+        function batchSetClass() {
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('请至少选择一个学生');
+                return;
+            }
+            document.getElementById('selectedCount').innerText = checkboxes.length;
+            document.getElementById('batchClassModal').style.display = 'flex';
+        }
+        function closeBatchClassModal() {
+            document.getElementById('batchClassModal').style.display = 'none';
+        }
+        async function batchSetClassConfirm() {
+            const newClass = document.getElementById('batchClassName').value.trim();
+            if (!newClass) {
+                alert('请输入班级名称');
+                return;
+            }
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            let successCount = 0;
+            for (const id of ids) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('students')
+                        .update({ class: newClass })
+                        .eq('id', id);
+                    if (!error) successCount++;
+                } catch (err) { console.error(err); }
+            }
+            alert(`已为 ${successCount} 名学生设置班级为 ${newClass}`);
+            closeBatchClassModal();
+            loadStudents();
+            loadRank();
+        }
+
+        // 导出 CSV
+        function exportStudentsCSV() {
+            if (!allStudents.length) {
+                alert('暂无学生数据');
+                return;
+            }
+            const headers = ['学号', '姓名', '班级', '积分'];
+            const rows = allStudents.map(s => [s.student_id, s.name, s.class || '', s.total_points]);
+            const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `学生列表_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        // 全选/取消全选
         function toggleSelectAll(type) {
             let checkboxes, selectAll;
             if (type === 'student') {
@@ -617,6 +801,7 @@
             checkboxes.forEach(cb => cb.checked = selectAll.checked);
         }
 
+        // 积分清零（选中）
         async function clearSelectedPoints() {
             const checkboxes = document.querySelectorAll('.student-checkbox:checked');
             if (checkboxes.length === 0) { alert('请至少选择一个学生'); return; }
@@ -638,6 +823,7 @@
             loadRank();
         }
 
+        // 编辑单个学生（原有）
         function editStudent(id, name, className) {
             document.getElementById('editStudentId').value = id;
             document.getElementById('editStudentName').value = name;
@@ -673,29 +859,34 @@
             } catch (err) { alert('保存失败：' + err.message); }
         }
 
-        // ========== 申请审核（彻底修复 ambiguous 错误，使用明确的别名）==========
+        // ========== 申请审核（拆分查询）==========
         async function loadApplications() {
             const pendingTbody = document.getElementById('pendingList');
             const historyTbody = document.getElementById('historyList');
             try {
-                // 待审核 - 使用明确的表别名，并在 select 字段中明确指定来源
-                const { data: pending, error: pendingError } = await supabaseClient
+                const { data: pendingApps, error: pendingError } = await supabaseClient
                     .from('applications')
-                    .select(`
-                        id,
-                        custom_points,
-                        reason,
-                        status,
-                        created_at,
-                        students!applications_student_id_fkey (name, student_id),
-                        point_rules!applications_rule_id_fkey (name, points, type)
-                    `)
+                    .select('id, student_id, rule_id, custom_points, reason, status, created_at')
                     .eq('status', 'pending')
                     .order('created_at');
                 if (pendingError) throw pendingError;
+
+                const pending = [];
+                for (const app of pendingApps || []) {
+                    const [studentRes, ruleRes] = await Promise.all([
+                        supabaseClient.from('students').select('name, student_id').eq('id', app.student_id).maybeSingle(),
+                        supabaseClient.from('point_rules').select('name, points, type').eq('id', app.rule_id).maybeSingle()
+                    ]);
+                    pending.push({
+                        ...app,
+                        students: studentRes.data || { name: '未知', student_id: '' },
+                        point_rules: ruleRes.data || { name: '已删除规则', points: null, type: 'add' }
+                    });
+                }
+
                 if (pendingTbody) {
                     pendingTbody.innerHTML = '';
-                    if (pending && pending.length > 0) {
+                    if (pending.length > 0) {
                         pending.forEach(app => {
                             const tr = document.createElement('tr');
                             const typeClass = app.point_rules?.type === 'add' ? 'type-badge-add' : 'type-badge-subtract';
@@ -720,24 +911,29 @@
                     }
                 }
 
-                // 已审核 - 同样使用完整外键语法
-                const { data: history, error: historyError } = await supabaseClient
+                const { data: historyApps, error: historyError } = await supabaseClient
                     .from('applications')
-                    .select(`
-                        id,
-                        custom_points,
-                        reason,
-                        status,
-                        reviewed_at,
-                        students!applications_student_id_fkey (name, student_id),
-                        point_rules!applications_rule_id_fkey (name, points, type)
-                    `)
+                    .select('id, student_id, rule_id, custom_points, reason, status, reviewed_at')
                     .neq('status', 'pending')
                     .order('reviewed_at', { ascending: false });
                 if (historyError) throw historyError;
+
+                const history = [];
+                for (const app of historyApps || []) {
+                    const [studentRes, ruleRes] = await Promise.all([
+                        supabaseClient.from('students').select('name, student_id').eq('id', app.student_id).maybeSingle(),
+                        supabaseClient.from('point_rules').select('name, points, type').eq('id', app.rule_id).maybeSingle()
+                    ]);
+                    history.push({
+                        ...app,
+                        students: studentRes.data || { name: '未知', student_id: '' },
+                        point_rules: ruleRes.data || { name: '已删除规则', points: null, type: 'add' }
+                    });
+                }
+
                 if (historyTbody) {
                     historyTbody.innerHTML = '';
-                    if (history && history.length > 0) {
+                    if (history.length > 0) {
                         history.forEach(app => {
                             const tr = document.createElement('tr');
                             const statusClass = `status-${app.status}`;
@@ -774,8 +970,10 @@
             if (checkboxes.length === 0) { alert('请至少选择一个申请'); return; }
             const statusText = status === 'approved' ? '通过' : '拒绝';
             if (!confirm(`确定要批量${statusText}选中的 ${checkboxes.length} 个申请吗？`)) return;
+
             const ids = Array.from(checkboxes).map(cb => cb.value);
             let successCount = 0, failCount = 0;
+
             for (const id of ids) {
                 try {
                     const { error: updateError } = await supabaseClient
@@ -783,21 +981,26 @@
                         .update({ status, reviewed_at: new Date() })
                         .eq('id', id);
                     if (updateError) throw updateError;
+
                     if (status === 'approved') {
                         const { data: app, error: fetchError } = await supabaseClient
                             .from('applications')
-                            .select(`
-                                student_id,
-                                custom_points,
-                                point_rules!applications_rule_id_fkey (points, type)
-                            `)
+                            .select('student_id, custom_points, rule_id')
                             .eq('id', id)
                             .single();
                         if (fetchError) throw fetchError;
-                        if (!app) throw new Error('未找到申请记录');
-                        const points = app.custom_points || app.point_rules?.points;
+
+                        const { data: rule, error: ruleError } = await supabaseClient
+                            .from('point_rules')
+                            .select('points, type')
+                            .eq('id', app.rule_id)
+                            .single();
+                        if (ruleError) throw ruleError;
+
+                        const points = app.custom_points || rule.points;
                         if (!points) throw new Error('无法确定分值');
-                        const pointValue = app.point_rules.type === 'add' ? points : -points;
+                        const pointValue = rule.type === 'add' ? points : -points;
+
                         const { error: rpcError } = await supabaseClient
                             .rpc('increment_student_points', {
                                 student_id: app.student_id,
@@ -825,21 +1028,26 @@
                     .update({ status, reviewed_at: new Date() })
                     .eq('id', id);
                 if (updateError) throw updateError;
+
                 if (status === 'approved') {
                     const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
-                        .select(`
-                            student_id,
-                            custom_points,
-                            point_rules!applications_rule_id_fkey (points, type)
-                        `)
+                        .select('student_id, custom_points, rule_id')
                         .eq('id', id)
                         .single();
                     if (fetchError) throw fetchError;
-                    if (!app) throw new Error('未找到申请记录');
-                    const points = app.custom_points || app.point_rules?.points;
+
+                    const { data: rule, error: ruleError } = await supabaseClient
+                        .from('point_rules')
+                        .select('points, type')
+                        .eq('id', app.rule_id)
+                        .single();
+                    if (ruleError) throw ruleError;
+
+                    const points = app.custom_points || rule.points;
                     if (!points) throw new Error('无法确定分值');
-                    const pointValue = app.point_rules.type === 'add' ? points : -points;
+                    const pointValue = rule.type === 'add' ? points : -points;
+
                     const { error: rpcError } = await supabaseClient
                         .rpc('increment_student_points', {
                             student_id: app.student_id,
@@ -847,6 +1055,7 @@
                         });
                     if (rpcError) throw rpcError;
                 }
+
                 loadApplications();
                 loadRank();
             } catch (err) {
@@ -891,7 +1100,7 @@
             }
         }
 
-        // ========== 静态按钮事件绑定 ==========
+        // ========== 事件绑定 ==========
         function initEventListeners() {
             const addRuleBtn = document.getElementById('addRuleBtn');
             if (addRuleBtn) {
@@ -910,15 +1119,6 @@
             document.getElementById('saveStudentBtn')?.addEventListener('click', saveStudent);
             document.getElementById('closeStudentModalBtn')?.addEventListener('click', closeStudentModal);
 
-            const studentSearch = document.getElementById('studentSearch');
-            if (studentSearch) {
-                studentSearch.addEventListener('input', function(e) {
-                    const kw = e.target.value.toLowerCase();
-                    document.querySelectorAll('#studentsList tr').forEach(tr => {
-                        tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
-                    });
-                });
-            }
             const historySearch = document.getElementById('historySearch');
             if (historySearch) {
                 historySearch.addEventListener('input', function(e) {
@@ -930,7 +1130,6 @@
             }
         }
 
-        // ========== 初始化 ==========
         checkTeacherLogin();
         initEventListeners();
     </script>
