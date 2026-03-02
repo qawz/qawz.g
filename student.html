@@ -6,7 +6,7 @@
     <title>班级优化大师 · 学生端</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 样式与之前相同，此处保留，但为节省篇幅省略，实际使用时请复制之前的完整样式 */
+        /* 完整样式（与之前相同，此处略，请复制你之前使用的完整样式） */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -309,7 +309,7 @@
     </style>
 </head>
 <body>
-    <!-- 登录界面（两个选项） -->
+    <!-- 登录界面 -->
     <div id="loginContainer" class="login-container">
         <h2>班级优化大师</h2>
         <input type="number" id="studentIdInput" placeholder="学号 (1-45)" min="1" max="45">
@@ -318,7 +318,7 @@
         <p id="loginError" class="error"></p>
     </div>
 
-    <!-- 登录后主界面（我的积分） -->
+    <!-- 登录后主界面 -->
     <div id="mainContainer" class="main-container">
         <div class="header">
             <h1>🎓 学生积分系统</h1>
@@ -343,14 +343,14 @@
                 <tbody id="applicationsList"></tbody>
             </table>
         </div>
-        <!-- 班级榜面板（登录后也可见） -->
+        <!-- 班级榜面板 -->
         <div id="classPanel" class="panel">
             <h2>👥 班级积分榜</h2>
             <div id="classGridLogged" class="class-grid"></div>
         </div>
     </div>
 
-    <!-- 班级榜独立界面（不登录直接进入） -->
+    <!-- 班级榜独立界面（游客） -->
     <div id="classBoardContainer" class="main-container" style="display:none;">
         <div class="header">
             <h1>👥 班级榜 · 点击卡片加分</h1>
@@ -361,7 +361,7 @@
         <div id="classBoardGrid" class="class-grid"></div>
     </div>
 
-    <!-- 加分弹窗（九宫格 + 自定义按钮） -->
+    <!-- 加分弹窗 -->
     <div id="applyModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle">选择加分项</h3>
@@ -372,7 +372,7 @@
     </div>
 
     <script>
-        // ========== Supabase 配置 ==========
+        // Supabase 配置
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -382,19 +382,13 @@
         let isGuestMode = false;
         let customRuleId = null;
 
-        // ========== 登录功能 ==========
+        // ========== 登录/退出 ==========
         async function login() {
             const studentId = document.getElementById('studentIdInput').value.trim();
             const errorDiv = document.getElementById('loginError');
-            if (!studentId) {
-                errorDiv.innerText = '请输入学号';
-                return;
-            }
+            if (!studentId) { errorDiv.innerText = '请输入学号'; return; }
             const numId = parseInt(studentId);
-            if (isNaN(numId) || numId < 1 || numId > 45) {
-                errorDiv.innerText = '学号必须是1-45之间的数字';
-                return;
-            }
+            if (isNaN(numId) || numId < 1 || numId > 45) { errorDiv.innerText = '学号必须是1-45之间的数字'; return; }
             try {
                 const { data, error } = await supabaseClient
                     .from('students')
@@ -402,10 +396,7 @@
                     .eq('student_id', numId)
                     .maybeSingle();
                 if (error) throw error;
-                if (!data) {
-                    errorDiv.innerText = '学号不存在，请确认';
-                    return;
-                }
+                if (!data) { errorDiv.innerText = '学号不存在，请确认'; return; }
                 currentStudent = data;
                 sessionStorage.setItem('studentId', numId.toString());
                 document.getElementById('loginContainer').style.display = 'none';
@@ -438,7 +429,7 @@
             const savedId = sessionStorage.getItem('studentId');
             if (savedId) {
                 const numId = parseInt(savedId);
-                const { data, error } = await supabaseClient
+                const { data } = await supabaseClient
                     .from('students')
                     .select('*')
                     .eq('student_id', numId)
@@ -458,6 +449,11 @@
             document.getElementById('loginContainer').style.display = 'block';
             document.getElementById('mainContainer').style.display = 'none';
             document.getElementById('classBoardContainer').style.display = 'none';
+        }
+
+        function logout() {
+            sessionStorage.removeItem('studentId');
+            location.reload();
         }
 
         function renderStudentInfo() {
@@ -637,7 +633,6 @@
                 return;
             }
 
-            // 保存第一个规则作为自定义加分的默认规则
             customRuleId = rules[0].id;
 
             const ruleGrid = document.getElementById('ruleGrid');
@@ -670,13 +665,13 @@
                 return;
             }
             if (!customRuleId) {
-                const { data: rules, error } = await supabaseClient
+                const { data: rules } = await supabaseClient
                     .from('point_rules')
                     .select('id')
                     .eq('enabled', true)
                     .eq('type', 'add')
                     .limit(1);
-                if (error || !rules || rules.length === 0) {
+                if (!rules || rules.length === 0) {
                     alert('无可用加分规则，无法自定义');
                     return;
                 }
@@ -723,11 +718,6 @@
         function closeModal() {
             document.getElementById('applyModal').style.display = 'none';
             currentTargetStudent = null;
-        }
-
-        function logout() {
-            sessionStorage.removeItem('studentId');
-            location.reload();
         }
 
         checkLogin();
