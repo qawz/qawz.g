@@ -6,6 +6,7 @@
     <title>教师管理后台 · 班级优化大师</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        /* 完整样式（与之前相同，此处略，请复制你之前使用的完整样式） */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -370,7 +371,7 @@
         </div>
     </div>
 
-    <!-- 学生编辑模态框（编辑单个学生） -->
+    <!-- 学生编辑模态框 -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <h3>编辑学生</h3>
@@ -417,7 +418,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let allStudents = []; // 存储所有学生数据，用于筛选
+        let allStudents = [];
 
         // ========== 登录/登出 ==========
         async function teacherLogin() {
@@ -605,7 +606,7 @@
             document.getElementById('ruleModal').style.display = 'none';
         }
 
-        // ========== 学生管理（增强版）==========
+        // ========== 学生管理 ==========
         async function loadStudents() {
             const tbody = document.getElementById('studentsList');
             if (!tbody) return;
@@ -668,7 +669,6 @@
             renderStudentList(filtered);
         }
 
-        // 添加学生
         function showAddStudentModal() {
             document.getElementById('addStudentModal').style.display = 'flex';
         }
@@ -689,7 +689,6 @@
                 return;
             }
             try {
-                // 检查学号是否已存在
                 const { data: existing } = await supabaseClient
                     .from('students')
                     .select('id')
@@ -712,7 +711,6 @@
                 closeAddStudentModal();
                 loadStudents();
                 loadRank();
-                // 清空输入
                 document.getElementById('newStudentId').value = '';
                 document.getElementById('newStudentName').value = '';
                 document.getElementById('newStudentClass').value = '1班';
@@ -721,7 +719,6 @@
             }
         }
 
-        // 批量设置班级
         function batchSetClass() {
             const checkboxes = document.querySelectorAll('.student-checkbox:checked');
             if (checkboxes.length === 0) {
@@ -758,7 +755,6 @@
             loadRank();
         }
 
-        // 导出 CSV
         function exportStudentsCSV() {
             if (!allStudents.length) {
                 alert('暂无学生数据');
@@ -774,7 +770,6 @@
             link.click();
         }
 
-        // 全选/取消全选
         function toggleSelectAll(type) {
             let checkboxes, selectAll;
             if (type === 'student') {
@@ -801,7 +796,6 @@
             checkboxes.forEach(cb => cb.checked = selectAll.checked);
         }
 
-        // 积分清零（选中）
         async function clearSelectedPoints() {
             const checkboxes = document.querySelectorAll('.student-checkbox:checked');
             if (checkboxes.length === 0) { alert('请至少选择一个学生'); return; }
@@ -823,7 +817,6 @@
             loadRank();
         }
 
-        // 编辑单个学生（原有）
         function editStudent(id, name, className) {
             document.getElementById('editStudentId').value = id;
             document.getElementById('editStudentName').value = name;
@@ -859,11 +852,12 @@
             } catch (err) { alert('保存失败：' + err.message); }
         }
 
-        // ========== 申请审核（拆分查询）==========
+        // ========== 申请审核（彻底拆分，避免歧义）==========
         async function loadApplications() {
             const pendingTbody = document.getElementById('pendingList');
             const historyTbody = document.getElementById('historyList');
             try {
+                // 待审核申请
                 const { data: pendingApps, error: pendingError } = await supabaseClient
                     .from('applications')
                     .select('id, student_id, rule_id, custom_points, reason, status, created_at')
@@ -911,6 +905,7 @@
                     }
                 }
 
+                // 已审核记录
                 const { data: historyApps, error: historyError } = await supabaseClient
                     .from('applications')
                     .select('id, student_id, rule_id, custom_points, reason, status, reviewed_at')
@@ -976,31 +971,38 @@
 
             for (const id of ids) {
                 try {
+                    // 1. 更新申请状态
                     const { error: updateError } = await supabaseClient
                         .from('applications')
                         .update({ status, reviewed_at: new Date() })
                         .eq('id', id);
                     if (updateError) throw updateError;
 
+                    // 2. 如果是通过，增加积分
                     if (status === 'approved') {
+                        // 获取申请详情（明确字段）
                         const { data: app, error: fetchError } = await supabaseClient
                             .from('applications')
                             .select('student_id, custom_points, rule_id')
                             .eq('id', id)
-                            .single();
+                            .maybeSingle();
                         if (fetchError) throw fetchError;
+                        if (!app) throw new Error('未找到申请记录');
 
+                        // 获取规则分值
                         const { data: rule, error: ruleError } = await supabaseClient
                             .from('point_rules')
                             .select('points, type')
                             .eq('id', app.rule_id)
-                            .single();
+                            .maybeSingle();
                         if (ruleError) throw ruleError;
+                        if (!rule) throw new Error('规则不存在');
 
                         const points = app.custom_points || rule.points;
                         if (!points) throw new Error('无法确定分值');
                         const pointValue = rule.type === 'add' ? points : -points;
 
+                        // 调用 RPC
                         const { error: rpcError } = await supabaseClient
                             .rpc('increment_student_points', {
                                 student_id: app.student_id,
@@ -1023,31 +1025,38 @@
 
         async function reviewApplication(id, status) {
             try {
+                // 1. 更新申请状态
                 const { error: updateError } = await supabaseClient
                     .from('applications')
                     .update({ status, reviewed_at: new Date() })
                     .eq('id', id);
                 if (updateError) throw updateError;
 
+                // 2. 如果是通过，增加积分
                 if (status === 'approved') {
+                    // 获取申请详情
                     const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
                         .select('student_id, custom_points, rule_id')
                         .eq('id', id)
-                        .single();
+                        .maybeSingle();
                     if (fetchError) throw fetchError;
+                    if (!app) throw new Error('未找到申请记录');
 
+                    // 获取规则分值
                     const { data: rule, error: ruleError } = await supabaseClient
                         .from('point_rules')
                         .select('points, type')
                         .eq('id', app.rule_id)
-                        .single();
+                        .maybeSingle();
                     if (ruleError) throw ruleError;
+                    if (!rule) throw new Error('规则不存在');
 
                     const points = app.custom_points || rule.points;
                     if (!points) throw new Error('无法确定分值');
                     const pointValue = rule.type === 'add' ? points : -points;
 
+                    // 调用 RPC
                     const { error: rpcError } = await supabaseClient
                         .rpc('increment_student_points', {
                             student_id: app.student_id,
