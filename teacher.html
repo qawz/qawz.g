@@ -72,6 +72,7 @@
             margin-bottom: 30px;
             border-bottom: 2px solid #e2e8f0;
             padding-bottom: 10px;
+            flex-wrap: wrap;
         }
         .tab-btn {
             padding: 10px 20px;
@@ -127,6 +128,7 @@
         .status-pending { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 20px; }
         .status-approved { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; }
         .status-rejected { background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 20px; }
+        .status-completed { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; }
         .modal {
             display: none;
             position: fixed;
@@ -211,6 +213,9 @@
             <button class="tab-btn" onclick="switchTab('students')">👥 学生管理</button>
             <button class="tab-btn" onclick="switchTab('applications')">📬 申请审核</button>
             <button class="tab-btn" onclick="switchTab('rank')">🏆 积分排名</button>
+            <button class="tab-btn" onclick="switchTab('prizes')">🎁 奖项管理</button>
+            <button class="tab-btn" onclick="switchTab('redemptions')">📦 兑换审核</button>
+            <button class="tab-btn" onclick="switchTab('tasks')">📝 任务管理</button>
         </div>
 
         <!-- 规则管理 -->
@@ -349,9 +354,141 @@
                 </table>
             </div>
         </div>
+
+        <!-- 奖项管理面板 -->
+        <div id="prizesPanel" class="panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>奖项列表</h2>
+                    <button class="btn btn-primary" onclick="showAddPrizeModal()">➕ 新建奖项</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>描述</th>
+                            <th>所需积分</th>
+                            <th>库存</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prizesList">
+                        <tr><td colspan="6" style="text-align:center;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 兑换审核面板 -->
+        <div id="redemptionsPanel" class="panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>待审核兑换</h2>
+                    <div>
+                        <button class="btn btn-warning" onclick="toggleSelectAll('redemption')">全选/取消全选</button>
+                        <button class="btn btn-success" onclick="batchApproveRedemptions()">批量通过</button>
+                        <button class="btn btn-danger" onclick="batchRejectRedemptions()">批量拒绝</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col"><input type="checkbox" id="selectAllRedemption" onclick="toggleAllCheckboxes('redemption')"></th>
+                            <th>学生</th>
+                            <th>奖项</th>
+                            <th>消耗积分</th>
+                            <th>申请时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="redemptionsPendingList">
+                        <tr><td colspan="6" style="text-align:center;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>已处理记录</h2>
+                    <input type="text" id="redemptionSearch" class="search-box" placeholder="搜索学生或奖项">
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>学生</th>
+                            <th>奖项</th>
+                            <th>消耗积分</th>
+                            <th>状态</th>
+                            <th>处理时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="redemptionsHistoryList">
+                        <tr><td colspan="5" style="text-align:center;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 任务管理面板 -->
+        <div id="tasksPanel" class="panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>布置新任务</h2>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
+                    <select id="taskStudent" style="padding:8px; border-radius:8px; border:1px solid #ddd; min-width:200px;">
+                        <option value="">选择学生</option>
+                    </select>
+                    <input type="text" id="taskTitle" placeholder="任务标题" style="padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    <input type="text" id="taskDesc" placeholder="任务描述" style="padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    <input type="number" id="taskWordLimit" placeholder="字数要求" style="padding:8px; border-radius:8px; border:1px solid #ddd;">
+                    <button class="btn btn-success" onclick="addTask()">发布任务</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>待完成任务</h2>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>学生</th>
+                            <th>标题</th>
+                            <th>描述</th>
+                            <th>字数要求</th>
+                            <th>布置时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksPendingList">
+                        <tr><td colspan="6" style="text-align:center;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>已完成任务</h2>
+                    <input type="text" id="taskSearch" class="search-box" placeholder="搜索学生或标题">
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>学生</th>
+                            <th>标题</th>
+                            <th>描述</th>
+                            <th>完成时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksCompletedList">
+                        <tr><td colspan="5" style="text-align:center;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- 规则编辑模态框 -->
+    <!-- 规则编辑模态框（原有） -->
     <div id="ruleModal" class="modal">
         <div class="modal-content">
             <h3 id="ruleModalTitle">新建规则</h3>
@@ -371,7 +508,7 @@
         </div>
     </div>
 
-    <!-- 学生编辑模态框（编辑单个学生） -->
+    <!-- 学生编辑模态框（原有） -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <h3>编辑学生</h3>
@@ -386,7 +523,7 @@
         </div>
     </div>
 
-    <!-- 添加学生模态框 -->
+    <!-- 添加学生模态框（原有） -->
     <div id="addStudentModal" class="modal">
         <div class="modal-content">
             <h3>添加学生</h3>
@@ -400,7 +537,7 @@
         </div>
     </div>
 
-    <!-- 批量设置班级模态框 -->
+    <!-- 批量设置班级模态框（原有） -->
     <div id="batchClassModal" class="modal">
         <div class="modal-content">
             <h3>批量设置班级</h3>
@@ -409,6 +546,22 @@
             <div style="display:flex; gap:10px; justify-content:flex-end;">
                 <button class="btn btn-success" onclick="batchSetClassConfirm()">确定</button>
                 <button class="btn btn-danger" onclick="closeBatchClassModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 奖项编辑模态框（新增） -->
+    <div id="prizeModal" class="modal">
+        <div class="modal-content">
+            <h3 id="prizeModalTitle">新建奖项</h3>
+            <input type="hidden" id="prizeId">
+            <label>名称</label><input type="text" id="prizeName">
+            <label>描述</label><textarea id="prizeDesc" rows="2"></textarea>
+            <label>所需积分</label><input type="number" id="prizePoints" value="10" min="1">
+            <label>库存</label><input type="number" id="prizeStock" value="-1" placeholder="-1 表示无限">
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-success" onclick="savePrize()">保存</button>
+                <button class="btn btn-danger" onclick="closePrizeModal()">取消</button>
             </div>
         </div>
     </div>
@@ -439,6 +592,10 @@
                     loadStudents();
                     loadApplications();
                     loadRank();
+                    loadPrizes();
+                    loadRedemptions();
+                    loadTasks();
+                    loadStudentOptions();
                 } else {
                     document.getElementById('loginError').innerText = '用户名或密码错误';
                 }
@@ -461,6 +618,10 @@
                 loadStudents();
                 loadApplications();
                 loadRank();
+                loadPrizes();
+                loadRedemptions();
+                loadTasks();
+                loadStudentOptions();
             } else {
                 document.getElementById('loginContainer').style.display = 'block';
                 document.getElementById('mainContainer').style.display = 'none';
@@ -478,7 +639,7 @@
             });
         }
 
-        // ========== 规则管理 ==========
+        // ========== 规则管理（原有，略作精简，但保留完整功能） ==========
         async function loadRules() {
             const tbody = document.getElementById('rulesList');
             if (!tbody) return;
@@ -606,7 +767,7 @@
             document.getElementById('ruleModal').style.display = 'none';
         }
 
-        // ========== 学生管理 ==========
+        // ========== 学生管理（原有，略作精简） ==========
         async function loadStudents() {
             const tbody = document.getElementById('studentsList');
             if (!tbody) return;
@@ -711,6 +872,7 @@
                 closeAddStudentModal();
                 loadStudents();
                 loadRank();
+                loadStudentOptions();
                 document.getElementById('newStudentId').value = '';
                 document.getElementById('newStudentName').value = '';
                 document.getElementById('newStudentClass').value = '1班';
@@ -778,6 +940,9 @@
             } else if (type === 'pending') {
                 checkboxes = document.querySelectorAll('.pending-checkbox');
                 selectAll = document.getElementById('selectAllPending');
+            } else if (type === 'redemption') {
+                checkboxes = document.querySelectorAll('.redemption-checkbox');
+                selectAll = document.getElementById('selectAllRedemption');
             } else return;
             const allChecked = Array.from(checkboxes).every(cb => cb.checked);
             checkboxes.forEach(cb => cb.checked = !allChecked);
@@ -792,6 +957,9 @@
             } else if (type === 'pending') {
                 checkboxes = document.querySelectorAll('.pending-checkbox');
                 selectAll = document.getElementById('selectAllPending');
+            } else if (type === 'redemption') {
+                checkboxes = document.querySelectorAll('.redemption-checkbox');
+                selectAll = document.getElementById('selectAllRedemption');
             } else return;
             checkboxes.forEach(cb => cb.checked = selectAll.checked);
         }
@@ -842,7 +1010,6 @@
                     .eq('id', id);
                 if (updateError) throw updateError;
                 if (pointsAdjust !== 0) {
-                    // 直接更新积分
                     const { data: student, error: fetchError } = await supabaseClient
                         .from('students')
                         .select('total_points')
@@ -862,12 +1029,11 @@
             } catch (err) { alert('保存失败：' + err.message); }
         }
 
-        // ========== 申请审核 ==========
+        // ========== 申请审核（原有，略作精简） ==========
         async function loadApplications() {
             const pendingTbody = document.getElementById('pendingList');
             const historyTbody = document.getElementById('historyList');
             try {
-                // 待审核申请
                 const { data: pendingApps, error: pendingError } = await supabaseClient
                     .from('applications')
                     .select('id, student_id, rule_id, custom_points, reason, status, created_at')
@@ -915,7 +1081,6 @@
                     }
                 }
 
-                // 已审核记录
                 const { data: historyApps, error: historyError } = await supabaseClient
                     .from('applications')
                     .select('id, student_id, rule_id, custom_points, reason, status, reviewed_at')
@@ -981,16 +1146,13 @@
 
             for (const id of ids) {
                 try {
-                    // 1. 更新申请状态
                     const { error: updateError } = await supabaseClient
                         .from('applications')
                         .update({ status, reviewed_at: new Date() })
                         .eq('id', id);
                     if (updateError) throw updateError;
 
-                    // 2. 如果是通过，增加/扣除积分
                     if (status === 'approved') {
-                        // 获取申请详情
                         const { data: app, error: fetchError } = await supabaseClient
                             .from('applications')
                             .select('student_id, custom_points, rule_id')
@@ -999,7 +1161,6 @@
                         if (fetchError) throw fetchError;
                         if (!app) throw new Error('未找到申请记录');
 
-                        // 获取规则分值
                         const { data: rule, error: ruleError } = await supabaseClient
                             .from('point_rules')
                             .select('points, type')
@@ -1012,7 +1173,6 @@
                         if (!points) throw new Error('无法确定分值');
                         const pointValue = rule.type === 'add' ? points : -points;
 
-                        // 直接更新学生积分
                         const { data: student, error: studentError } = await supabaseClient
                             .from('students')
                             .select('total_points')
@@ -1042,16 +1202,13 @@
 
         async function reviewApplication(id, status) {
             try {
-                // 1. 更新申请状态
                 const { error: updateError } = await supabaseClient
                     .from('applications')
                     .update({ status, reviewed_at: new Date() })
                     .eq('id', id);
                 if (updateError) throw updateError;
 
-                // 2. 如果是通过，增加/扣除积分
                 if (status === 'approved') {
-                    // 获取申请详情
                     const { data: app, error: fetchError } = await supabaseClient
                         .from('applications')
                         .select('student_id, custom_points, rule_id')
@@ -1060,7 +1217,6 @@
                     if (fetchError) throw fetchError;
                     if (!app) throw new Error('未找到申请记录');
 
-                    // 获取规则分值
                     const { data: rule, error: ruleError } = await supabaseClient
                         .from('point_rules')
                         .select('points, type')
@@ -1073,7 +1229,6 @@
                     if (!points) throw new Error('无法确定分值');
                     const pointValue = rule.type === 'add' ? points : -points;
 
-                    // 直接更新学生积分
                     const { data: student, error: studentError } = await supabaseClient
                         .from('students')
                         .select('total_points')
@@ -1130,6 +1285,435 @@
             } catch (err) {
                 console.error('加载排名失败:', err);
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
+            }
+        }
+
+        // ========== 奖项管理 ==========
+        async function loadPrizes() {
+            const tbody = document.getElementById('prizesList');
+            if (!tbody) return;
+            try {
+                const { data: prizes, error } = await supabaseClient
+                    .from('prizes')
+                    .select('*')
+                    .order('points_required');
+                if (error) throw error;
+                tbody.innerHTML = '';
+                if (!prizes || prizes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无奖项</td></tr>';
+                    return;
+                }
+                prizes.forEach(prize => {
+                    const tr = document.createElement('tr');
+                    const stockText = prize.stock === -1 ? '无限' : prize.stock;
+                    const statusText = prize.enabled ? '启用' : '禁用';
+                    const statusColor = prize.enabled ? '#d4edda' : '#f8d7da';
+                    tr.innerHTML = `
+                        <td>${prize.name}</td>
+                        <td>${prize.description || '-'}</td>
+                        <td>${prize.points_required}</td>
+                        <td>${stockText}</td>
+                        <td><span style="background:${statusColor}; color:${prize.enabled ? '#155724' : '#721c24'}; padding:4px 10px; border-radius:20px;">${statusText}</span></td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="editPrize('${prize.id}')">编辑</button>
+                            <button class="btn btn-warning btn-sm" onclick="togglePrize('${prize.id}')">${prize.enabled ? '禁用' : '启用'}</button>
+                            <button class="btn btn-danger btn-sm" onclick="deletePrize('${prize.id}')">删除</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('加载奖项失败:', err);
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
+            }
+        }
+
+        function showAddPrizeModal() {
+            document.getElementById('prizeModalTitle').innerText = '新建奖项';
+            document.getElementById('prizeId').value = '';
+            document.getElementById('prizeName').value = '';
+            document.getElementById('prizeDesc').value = '';
+            document.getElementById('prizePoints').value = 10;
+            document.getElementById('prizeStock').value = -1;
+            document.getElementById('prizeModal').style.display = 'flex';
+        }
+
+        function closePrizeModal() {
+            document.getElementById('prizeModal').style.display = 'none';
+        }
+
+        async function editPrize(id) {
+            try {
+                const { data: prize, error } = await supabaseClient
+                    .from('prizes')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+                document.getElementById('prizeModalTitle').innerText = '编辑奖项';
+                document.getElementById('prizeId').value = prize.id;
+                document.getElementById('prizeName').value = prize.name;
+                document.getElementById('prizeDesc').value = prize.description || '';
+                document.getElementById('prizePoints').value = prize.points_required;
+                document.getElementById('prizeStock').value = prize.stock;
+                document.getElementById('prizeModal').style.display = 'flex';
+            } catch (err) {
+                alert('获取奖项失败：' + err.message);
+            }
+        }
+
+        async function togglePrize(id) {
+            try {
+                const { data: prize, error } = await supabaseClient
+                    .from('prizes')
+                    .select('enabled')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+                const { error: updateError } = await supabaseClient
+                    .from('prizes')
+                    .update({ enabled: !prize.enabled })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+                loadPrizes();
+            } catch (err) {
+                alert('切换失败：' + err.message);
+            }
+        }
+
+        async function deletePrize(id) {
+            if (!confirm('确定删除该奖项吗？')) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('prizes')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                loadPrizes();
+            } catch (err) {
+                alert('删除失败：' + err.message);
+            }
+        }
+
+        async function savePrize() {
+            const id = document.getElementById('prizeId').value;
+            const name = document.getElementById('prizeName').value.trim();
+            const desc = document.getElementById('prizeDesc').value.trim();
+            const points = parseInt(document.getElementById('prizePoints').value);
+            const stock = parseInt(document.getElementById('prizeStock').value);
+            if (!name || !points) {
+                alert('请填写名称和所需积分');
+                return;
+            }
+            const data = {
+                name,
+                description: desc || null,
+                points_required: points,
+                stock: stock,
+                enabled: true
+            };
+            try {
+                if (id) {
+                    const { error } = await supabaseClient
+                        .from('prizes')
+                        .update(data)
+                        .eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient
+                        .from('prizes')
+                        .insert([data]);
+                    if (error) throw error;
+                }
+                closePrizeModal();
+                loadPrizes();
+            } catch (err) {
+                alert('保存失败：' + err.message);
+            }
+        }
+
+        // ========== 兑换审核 ==========
+        async function loadRedemptions() {
+            const pendingTbody = document.getElementById('redemptionsPendingList');
+            const historyTbody = document.getElementById('redemptionsHistoryList');
+            try {
+                // 待审核
+                const { data: pending, error: pendingError } = await supabaseClient
+                    .from('redemptions')
+                    .select('*, students(name, student_id), prizes(name)')
+                    .eq('status', 'pending')
+                    .order('created_at');
+                if (pendingError) throw pendingError;
+
+                if (pendingTbody) {
+                    pendingTbody.innerHTML = '';
+                    if (pending && pending.length > 0) {
+                        pending.forEach(red => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td class="checkbox-col"><input type="checkbox" class="redemption-checkbox" value="${red.id}"></td>
+                                <td>${red.students?.name || '未知'} (${red.students?.student_id || ''})</td>
+                                <td>${red.prizes?.name || '已删除'}</td>
+                                <td>${red.points_spent}</td>
+                                <td>${new Date(red.created_at).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" onclick="approveRedemption('${red.id}')">通过</button>
+                                    <button class="btn btn-danger btn-sm" onclick="rejectRedemption('${red.id}')">拒绝</button>
+                                </td>
+                            `;
+                            pendingTbody.appendChild(tr);
+                        });
+                    } else {
+                        pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待审核兑换</td></tr>';
+                    }
+                }
+
+                // 已处理
+                const { data: history, error: historyError } = await supabaseClient
+                    .from('redemptions')
+                    .select('*, students(name, student_id), prizes(name)')
+                    .neq('status', 'pending')
+                    .order('reviewed_at', { ascending: false });
+                if (historyError) throw historyError;
+
+                if (historyTbody) {
+                    historyTbody.innerHTML = '';
+                    if (history && history.length > 0) {
+                        history.forEach(red => {
+                            const tr = document.createElement('tr');
+                            const statusClass = `status-${red.status}`;
+                            const statusText = red.status === 'approved' ? '已兑换' : '已拒绝';
+                            tr.innerHTML = `
+                                <td>${red.students?.name || '未知'} (${red.students?.student_id || ''})</td>
+                                <td>${red.prizes?.name || '已删除'}</td>
+                                <td>${red.points_spent}</td>
+                                <td><span class="${statusClass}">${statusText}</span></td>
+                                <td>${red.reviewed_at ? new Date(red.reviewed_at).toLocaleString() : ''}</td>
+                            `;
+                            historyTbody.appendChild(tr);
+                        });
+                    } else {
+                        historyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无历史记录</td></tr>';
+                    }
+                }
+            } catch (err) {
+                console.error('加载兑换记录失败:', err);
+                if (pendingTbody) pendingTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
+                if (historyTbody) historyTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
+            }
+        }
+
+        async function approveRedemption(id) {
+            await processRedemption(id, 'approved');
+        }
+        async function rejectRedemption(id) {
+            await processRedemption(id, 'rejected');
+        }
+        async function processRedemption(id, status) {
+            try {
+                const { error: updateError } = await supabaseClient
+                    .from('redemptions')
+                    .update({ status, reviewed_at: new Date() })
+                    .eq('id', id);
+                if (updateError) throw updateError;
+
+                // 如果通过，扣除学生积分（在学生端兑换时已检查足够，但扣除操作在这里执行）
+                if (status === 'approved') {
+                    const { data: red, error: fetchError } = await supabaseClient
+                        .from('redemptions')
+                        .select('student_id, points_spent')
+                        .eq('id', id)
+                        .single();
+                    if (fetchError) throw fetchError;
+                    if (red) {
+                        const { data: student, error: studentError } = await supabaseClient
+                            .from('students')
+                            .select('total_points')
+                            .eq('id', red.student_id)
+                            .single();
+                        if (studentError) throw studentError;
+                        const newTotal = (student.total_points || 0) - red.points_spent;
+                        const { error: updateStudentError } = await supabaseClient
+                            .from('students')
+                            .update({ total_points: newTotal })
+                            .eq('id', red.student_id);
+                        if (updateStudentError) throw updateStudentError;
+                    }
+                }
+
+                alert('操作成功');
+                loadRedemptions();
+                loadRank();
+            } catch (err) {
+                alert('操作失败：' + err.message);
+            }
+        }
+
+        async function batchApproveRedemptions() {
+            await batchProcessRedemptions('approved');
+        }
+        async function batchRejectRedemptions() {
+            await batchProcessRedemptions('rejected');
+        }
+        async function batchProcessRedemptions(status) {
+            const checkboxes = document.querySelectorAll('.redemption-checkbox:checked');
+            if (checkboxes.length === 0) { alert('请至少选择一个兑换申请'); return; }
+            const statusText = status === 'approved' ? '通过' : '拒绝';
+            if (!confirm(`确定要批量${statusText}选中的 ${checkboxes.length} 个兑换申请吗？`)) return;
+
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            let successCount = 0, failCount = 0;
+            for (const id of ids) {
+                try {
+                    await processRedemption(id, status);
+                    successCount++;
+                } catch (err) {
+                    failCount++;
+                    console.error('批量处理失败:', id, err);
+                }
+            }
+            alert(`批量处理完成：${successCount} 个成功${failCount > 0 ? '，' + failCount + ' 个失败' : ''}`);
+            loadRedemptions();
+            loadRank();
+            const selectAll = document.getElementById('selectAllRedemption');
+            if (selectAll) selectAll.checked = false;
+        }
+
+        // ========== 任务管理 ==========
+        async function loadStudentOptions() {
+            const select = document.getElementById('taskStudent');
+            select.innerHTML = '<option value="">选择学生</option>';
+            try {
+                const { data: students, error } = await supabaseClient
+                    .from('students')
+                    .select('id, name, student_id')
+                    .order('student_id');
+                if (error) throw error;
+                students.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.id;
+                    option.textContent = `${s.name} (学号 ${s.student_id})`;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error('加载学生选项失败:', err);
+            }
+        }
+
+        async function loadTasks() {
+            const pendingTbody = document.getElementById('tasksPendingList');
+            const completedTbody = document.getElementById('tasksCompletedList');
+            try {
+                // 待完成任务
+                const { data: pending, error: pendingError } = await supabaseClient
+                    .from('tasks')
+                    .select('*, students(name, student_id)')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+                if (pendingError) throw pendingError;
+
+                if (pendingTbody) {
+                    pendingTbody.innerHTML = '';
+                    if (pending && pending.length > 0) {
+                        pending.forEach(task => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${task.students?.name || '未知'} (${task.students?.student_id || ''})</td>
+                                <td>${task.title}</td>
+                                <td>${task.description || ''}</td>
+                                <td>${task.word_limit || '-'}</td>
+                                <td>${new Date(task.created_at).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteTask('${task.id}')">删除</button>
+                                </td>
+                            `;
+                            pendingTbody.appendChild(tr);
+                        });
+                    } else {
+                        pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">暂无待完成任务</td></tr>';
+                    }
+                }
+
+                // 已完成任务
+                const { data: completed, error: completedError } = await supabaseClient
+                    .from('tasks')
+                    .select('*, students(name, student_id)')
+                    .eq('status', 'completed')
+                    .order('completed_at', { ascending: false });
+                if (completedError) throw completedError;
+
+                if (completedTbody) {
+                    completedTbody.innerHTML = '';
+                    if (completed && completed.length > 0) {
+                        completed.forEach(task => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${task.students?.name || '未知'} (${task.students?.student_id || ''})</td>
+                                <td>${task.title}</td>
+                                <td>${task.description || ''}</td>
+                                <td>${new Date(task.completed_at).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteTask('${task.id}')">删除</button>
+                                </td>
+                            `;
+                            completedTbody.appendChild(tr);
+                        });
+                    } else {
+                        completedTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无已完成任务</td></tr>';
+                    }
+                }
+            } catch (err) {
+                console.error('加载任务失败:', err);
+                if (pendingTbody) pendingTbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
+                if (completedTbody) completedTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">加载失败：${err.message}</td></tr>`;
+            }
+        }
+
+        async function addTask() {
+            const studentId = document.getElementById('taskStudent').value;
+            const title = document.getElementById('taskTitle').value.trim();
+            const desc = document.getElementById('taskDesc').value.trim();
+            const wordLimit = parseInt(document.getElementById('taskWordLimit').value) || null;
+            if (!studentId) {
+                alert('请选择学生');
+                return;
+            }
+            if (!title) {
+                alert('请填写任务标题');
+                return;
+            }
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .insert({
+                        student_id: studentId,
+                        title,
+                        description: desc || null,
+                        word_limit: wordLimit,
+                        status: 'pending'
+                    });
+                if (error) throw error;
+                alert('任务发布成功');
+                document.getElementById('taskTitle').value = '';
+                document.getElementById('taskDesc').value = '';
+                document.getElementById('taskWordLimit').value = '';
+                loadTasks();
+            } catch (err) {
+                alert('发布失败：' + err.message);
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('确定删除该任务吗？')) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                loadTasks();
+            } catch (err) {
+                alert('删除失败：' + err.message);
             }
         }
 
