@@ -243,7 +243,7 @@
             </div>
         </div>
 
-        <!-- 学生管理（增强版） -->
+        <!-- 学生管理 -->
         <div id="studentsPanel" class="panel">
             <div class="card">
                 <div class="card-header">
@@ -355,7 +355,7 @@
             </div>
         </div>
 
-        <!-- 奖项管理面板 -->
+        <!-- 奖项管理 -->
         <div id="prizesPanel" class="panel">
             <div class="card">
                 <div class="card-header">
@@ -380,7 +380,7 @@
             </div>
         </div>
 
-        <!-- 兑换审核面板 -->
+        <!-- 兑换审核 -->
         <div id="redemptionsPanel" class="panel">
             <div class="card">
                 <div class="card-header">
@@ -429,7 +429,7 @@
             </div>
         </div>
 
-        <!-- 任务管理面板 -->
+        <!-- 任务管理 -->
         <div id="tasksPanel" class="panel">
             <div class="card">
                 <div class="card-header">
@@ -488,7 +488,7 @@
         </div>
     </div>
 
-    <!-- 规则编辑模态框（原有） -->
+    <!-- 规则编辑模态框 -->
     <div id="ruleModal" class="modal">
         <div class="modal-content">
             <h3 id="ruleModalTitle">新建规则</h3>
@@ -508,14 +508,14 @@
         </div>
     </div>
 
-    <!-- 学生编辑模态框（原有） -->
+    <!-- 学生编辑模态框（直接设置新积分） -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <h3>编辑学生</h3>
             <input type="hidden" id="editStudentId">
             <label>姓名</label><input type="text" id="editStudentName">
             <label>班级</label><input type="text" id="editStudentClass">
-            <label>调整积分</label><input type="number" id="editStudentPoints" value="0" placeholder="正加负减">
+            <label>新积分</label><input type="number" id="editStudentPoints" value="0" placeholder="直接输入新积分">
             <div style="display:flex; gap:10px; justify-content:flex-end;">
                 <button class="btn btn-success" id="saveStudentBtn">保存</button>
                 <button class="btn btn-danger" id="closeStudentModalBtn">取消</button>
@@ -523,7 +523,7 @@
         </div>
     </div>
 
-    <!-- 添加学生模态框（原有） -->
+    <!-- 添加学生模态框 -->
     <div id="addStudentModal" class="modal">
         <div class="modal-content">
             <h3>添加学生</h3>
@@ -537,7 +537,7 @@
         </div>
     </div>
 
-    <!-- 批量设置班级模态框（原有） -->
+    <!-- 批量设置班级模态框 -->
     <div id="batchClassModal" class="modal">
         <div class="modal-content">
             <h3>批量设置班级</h3>
@@ -550,7 +550,7 @@
         </div>
     </div>
 
-    <!-- 奖项编辑模态框（新增） -->
+    <!-- 奖项编辑模态框 -->
     <div id="prizeModal" class="modal">
         <div class="modal-content">
             <h3 id="prizeModalTitle">新建奖项</h3>
@@ -639,7 +639,7 @@
             });
         }
 
-        // ========== 规则管理（原有，略作精简，但保留完整功能） ==========
+        // ========== 规则管理 ==========
         async function loadRules() {
             const tbody = document.getElementById('rulesList');
             if (!tbody) return;
@@ -767,7 +767,7 @@
             document.getElementById('ruleModal').style.display = 'none';
         }
 
-        // ========== 学生管理（原有，略作精简） ==========
+        // ========== 学生管理 ==========
         async function loadStudents() {
             const tbody = document.getElementById('studentsList');
             if (!tbody) return;
@@ -997,39 +997,42 @@
             document.getElementById('studentModal').style.display = 'none';
         }
 
+        // 保存学生编辑（直接设置新积分）
         async function saveStudent() {
             const id = document.getElementById('editStudentId').value;
             const name = document.getElementById('editStudentName').value.trim();
             const className = document.getElementById('editStudentClass').value.trim();
-            const pointsAdjust = parseInt(document.getElementById('editStudentPoints').value) || 0;
+            const newPoints = parseInt(document.getElementById('editStudentPoints').value);
+            
             if (!name) { alert('姓名不能为空'); return; }
+            if (isNaN(newPoints)) { alert('请输入有效的积分值'); return; }
+            
             try {
+                // 更新学生信息（姓名和班级）
+                const updates = { name };
+                if (className) updates.class = className;
                 const { error: updateError } = await supabaseClient
                     .from('students')
-                    .update({ name, class: className })
+                    .update(updates)
                     .eq('id', id);
                 if (updateError) throw updateError;
-                if (pointsAdjust !== 0) {
-                    const { data: student, error: fetchError } = await supabaseClient
-                        .from('students')
-                        .select('total_points')
-                        .eq('id', id)
-                        .single();
-                    if (fetchError) throw fetchError;
-                    const newTotal = (student.total_points || 0) + pointsAdjust;
-                    const { error: updatePointsError } = await supabaseClient
-                        .from('students')
-                        .update({ total_points: newTotal })
-                        .eq('id', id);
-                    if (updatePointsError) throw updatePointsError;
-                }
+                
+                // 直接设置新积分（覆盖原值）
+                const { error: pointsError } = await supabaseClient
+                    .from('students')
+                    .update({ total_points: newPoints })
+                    .eq('id', id);
+                if (pointsError) throw pointsError;
+                
                 closeStudentModal();
                 loadStudents();
                 loadRank();
-            } catch (err) { alert('保存失败：' + err.message); }
+            } catch (err) { 
+                alert('保存失败：' + err.message); 
+            }
         }
 
-        // ========== 申请审核（原有，略作精简） ==========
+        // ========== 申请审核 ==========
         async function loadApplications() {
             const pendingTbody = document.getElementById('pendingList');
             const historyTbody = document.getElementById('historyList');
@@ -1517,7 +1520,7 @@
                     .eq('id', id);
                 if (updateError) throw updateError;
 
-                // 如果通过，扣除学生积分（在学生端兑换时已检查足够，但扣除操作在这里执行）
+                // 如果通过，扣除学生积分
                 if (status === 'approved') {
                     const { data: red, error: fetchError } = await supabaseClient
                         .from('redemptions')
@@ -1741,6 +1744,26 @@
                 historySearch.addEventListener('input', function(e) {
                     const kw = e.target.value.toLowerCase();
                     document.querySelectorAll('#historyList tr').forEach(tr => {
+                        tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                    });
+                });
+            }
+
+            const redemptionSearch = document.getElementById('redemptionSearch');
+            if (redemptionSearch) {
+                redemptionSearch.addEventListener('input', function(e) {
+                    const kw = e.target.value.toLowerCase();
+                    document.querySelectorAll('#redemptionsHistoryList tr').forEach(tr => {
+                        tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
+                    });
+                });
+            }
+
+            const taskSearch = document.getElementById('taskSearch');
+            if (taskSearch) {
+                taskSearch.addEventListener('input', function(e) {
+                    const kw = e.target.value.toLowerCase();
+                    document.querySelectorAll('#tasksCompletedList tr').forEach(tr => {
                         tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none';
                     });
                 });
