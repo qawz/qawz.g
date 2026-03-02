@@ -6,7 +6,6 @@
     <title>班级优化大师 · 学生端</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 保留原有样式，并增加任务和奖项相关样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -255,7 +254,7 @@
             font-weight: bold;
         }
 
-        /* 加分弹窗（同之前） */
+        /* 加分弹窗 */
         .rule-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -354,7 +353,7 @@
             </table>
         </div>
 
-        <!-- 班级榜面板（登录后可见） -->
+        <!-- 班级榜面板 -->
         <div id="classPanel" class="panel">
             <h2>👥 班级积分榜</h2>
             <div id="classGridLogged" class="class-grid"></div>
@@ -391,7 +390,7 @@
         <div id="classBoardGrid" class="class-grid"></div>
     </div>
 
-    <!-- 加分弹窗（保留） -->
+    <!-- 加分弹窗 -->
     <div id="applyModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle">选择加分项</h3>
@@ -520,7 +519,7 @@
             }
         }
 
-        // ========== 我的积分功能（同之前） ==========
+        // ========== 我的积分功能 ==========
         async function loadMyRules() {
             try {
                 const { data: rules, error } = await supabaseClient
@@ -655,7 +654,7 @@
             }
         }
 
-        // ========== 加分弹窗（同之前） ==========
+        // ========== 加分弹窗 ==========
         async function showAddModal(student) {
             currentTargetStudent = student;
             document.getElementById('modalTitle').innerText = `为 ${student.name} 加分`;
