@@ -6,6 +6,7 @@
     <title>班级优化大师 · 学生端</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        /* 保留原有样式，并增加任务和奖项相关样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -79,6 +80,7 @@
             margin-bottom: 30px;
             border-bottom: 2px solid #e2e8f0;
             padding-bottom: 10px;
+            flex-wrap: wrap;
         }
         .tab-btn {
             padding: 10px 20px;
@@ -112,40 +114,49 @@
             border-radius: 30px;
             font-weight: bold;
         }
-        .rules-grid {
+        .rules-grid, .prizes-grid, .tasks-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }
-        .rule-card {
+        .rule-card, .prize-card, .task-card {
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 15px;
             padding: 20px;
             transition: transform 0.2s;
         }
-        .rule-card:hover {
+        .rule-card:hover, .prize-card:hover, .task-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         }
-        .rule-card h3 { color: #667eea; margin-bottom: 10px; }
-        .rule-card p { color: #555; margin-bottom: 15px; }
-        .rule-card .points-tag {
+        .rule-card h3, .prize-card h3, .task-card h3 { color: #667eea; margin-bottom: 10px; }
+        .rule-card p, .prize-card p, .task-card p { color: #555; margin-bottom: 15px; }
+        .points-tag, .prize-points {
             background: #e2e8f0;
             padding: 5px 12px;
             border-radius: 20px;
             display: inline-block;
             margin-bottom: 15px;
         }
-        .rule-card button {
+        .prize-points { background: #fef3c7; color: #b45309; }
+        .btn {
+            display: inline-block;
             background: #667eea;
             color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 8px;
-            width: 100%;
             cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            width: 100%;
+            text-align: center;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
         table {
             width: 100%;
@@ -161,6 +172,37 @@
         .status-pending { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 20px; }
         .status-approved { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; }
         .status-rejected { background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 20px; }
+        .status-completed { background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 400px;
+            max-width: 90%;
+        }
+        .modal-content select,
+        .modal-content input,
+        .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
 
         /* 班级榜九宫格 */
         .class-grid {
@@ -213,41 +255,7 @@
             font-weight: bold;
         }
 
-        /* 加分弹窗九宫格（含头像） */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            width: 450px;
-            max-width: 90%;
-            position: relative;
-        }
-        .modal-content h3 {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .custom-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #ffc107;
-            color: #333;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 15px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .custom-btn:hover { background: #e0a800; }
+        /* 加分弹窗（同之前） */
         .rule-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -328,7 +336,10 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('my')">📋 我的积分</button>
             <button class="tab-btn" onclick="switchTab('class')">👥 班级榜</button>
+            <button class="tab-btn" onclick="switchTab('prizes')">🎁 兑奖</button>
+            <button class="tab-btn" onclick="switchTab('tasks')">📝 我的任务</button>
         </div>
+
         <!-- 我的积分面板 -->
         <div id="myPanel" class="panel active">
             <div id="studentInfo" class="student-info"></div>
@@ -342,10 +353,30 @@
                 <tbody id="applicationsList"></tbody>
             </table>
         </div>
-        <!-- 班级榜面板 -->
+
+        <!-- 班级榜面板（登录后可见） -->
         <div id="classPanel" class="panel">
             <h2>👥 班级积分榜</h2>
             <div id="classGridLogged" class="class-grid"></div>
+        </div>
+
+        <!-- 兑奖面板 -->
+        <div id="prizesPanel" class="panel">
+            <h2>🎁 可兑换奖项</h2>
+            <div id="prizesList" class="prizes-grid"></div>
+            <h2>📦 我的兑换记录</h2>
+            <table>
+                <thead>
+                    <tr><th>奖项</th><th>消耗积分</th><th>状态</th><th>申请时间</th></tr>
+                </thead>
+                <tbody id="redemptionsList"></tbody>
+            </table>
+        </div>
+
+        <!-- 我的任务面板 -->
+        <div id="tasksPanel" class="panel">
+            <h2>📝 待完成任务</h2>
+            <div id="tasksList" class="tasks-grid"></div>
         </div>
     </div>
 
@@ -360,7 +391,7 @@
         <div id="classBoardGrid" class="class-grid"></div>
     </div>
 
-    <!-- 加分弹窗 -->
+    <!-- 加分弹窗（保留） -->
     <div id="applyModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle">选择加分项</h3>
@@ -371,7 +402,6 @@
     </div>
 
     <script>
-        // Supabase 配置
         const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -405,6 +435,9 @@
                 loadMyRules();
                 loadMyApplications();
                 loadClassRankLogged();
+                loadPrizes();
+                loadRedemptions();
+                loadTasks();
             } catch (err) {
                 console.error('登录异常:', err);
                 errorDiv.innerText = '登录异常：' + err.message;
@@ -442,6 +475,9 @@
                     loadMyRules();
                     loadMyApplications();
                     loadClassRankLogged();
+                    loadPrizes();
+                    loadRedemptions();
+                    loadTasks();
                     return;
                 }
             }
@@ -472,13 +508,19 @@
             if (tab === 'my') {
                 document.querySelector('.tab-btn[onclick="switchTab(\'my\')"]').classList.add('active');
                 document.getElementById('myPanel').classList.add('active');
-            } else {
+            } else if (tab === 'class') {
                 document.querySelector('.tab-btn[onclick="switchTab(\'class\')"]').classList.add('active');
                 document.getElementById('classPanel').classList.add('active');
+            } else if (tab === 'prizes') {
+                document.querySelector('.tab-btn[onclick="switchTab(\'prizes\')"]').classList.add('active');
+                document.getElementById('prizesPanel').classList.add('active');
+            } else if (tab === 'tasks') {
+                document.querySelector('.tab-btn[onclick="switchTab(\'tasks\')"]').classList.add('active');
+                document.getElementById('tasksPanel').classList.add('active');
             }
         }
 
-        // ========== 我的积分功能 ==========
+        // ========== 我的积分功能（同之前） ==========
         async function loadMyRules() {
             try {
                 const { data: rules, error } = await supabaseClient
@@ -500,7 +542,7 @@
                         <h3>${rule.name}</h3>
                         <p>${rule.description || ''}</p>
                         <span class="points-tag">默认 ${rule.points} 分</span>
-                        <button onclick="submitSelfApply(${rule.id})">为自己申请</button>
+                        <button class="btn" onclick="submitSelfApply(${rule.id})">为自己申请</button>
                     `;
                     container.appendChild(card);
                 });
@@ -613,7 +655,7 @@
             }
         }
 
-        // ========== 加分弹窗 ==========
+        // ========== 加分弹窗（同之前） ==========
         async function showAddModal(student) {
             currentTargetStudent = student;
             document.getElementById('modalTitle').innerText = `为 ${student.name} 加分`;
@@ -717,6 +759,156 @@
         function closeModal() {
             document.getElementById('applyModal').style.display = 'none';
             currentTargetStudent = null;
+        }
+
+        // ========== 兑奖功能 ==========
+        async function loadPrizes() {
+            if (!currentStudent) return;
+            try {
+                const { data: prizes, error } = await supabaseClient
+                    .from('prizes')
+                    .select('*')
+                    .eq('enabled', true)
+                    .order('points_required');
+                if (error) throw error;
+                const container = document.getElementById('prizesList');
+                container.innerHTML = '';
+                if (!prizes || prizes.length === 0) {
+                    container.innerHTML = '<p>暂无可用奖项</p>';
+                    return;
+                }
+                prizes.forEach(prize => {
+                    const card = document.createElement('div');
+                    card.className = 'prize-card';
+                    const canRedeem = currentStudent.total_points >= prize.points_required;
+                    card.innerHTML = `
+                        <h3>${prize.name}</h3>
+                        <p>${prize.description || ''}</p>
+                        <span class="prize-points">需要 ${prize.points_required} 积分</span>
+                        ${prize.stock >= 0 ? `<p>库存: ${prize.stock}</p>` : ''}
+                        <button class="btn" onclick="redeemPrize('${prize.id}')" ${!canRedeem ? 'disabled' : ''}>兑换</button>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error('加载奖项失败', err);
+            }
+        }
+
+        async function redeemPrize(prizeId) {
+            if (!currentStudent) return;
+            // 获取奖项详情检查库存和积分
+            const { data: prize, error: prizeError } = await supabaseClient
+                .from('prizes')
+                .select('*')
+                .eq('id', prizeId)
+                .single();
+            if (prizeError || !prize) {
+                alert('奖项不存在');
+                return;
+            }
+            if (currentStudent.total_points < prize.points_required) {
+                alert('积分不足');
+                return;
+            }
+            if (prize.stock === 0) {
+                alert('库存不足');
+                return;
+            }
+            try {
+                // 创建兑换申请
+                const { error } = await supabaseClient
+                    .from('redemptions')
+                    .insert({
+                        student_id: currentStudent.id,
+                        prize_id: prizeId,
+                        points_spent: prize.points_required,
+                        status: 'pending'
+                    });
+                if (error) throw error;
+                alert('兑换申请已提交，等待老师审核');
+                loadRedemptions();
+            } catch (err) {
+                alert('兑换失败：' + err.message);
+            }
+        }
+
+        async function loadRedemptions() {
+            if (!currentStudent) return;
+            try {
+                const { data: redemptions, error } = await supabaseClient
+                    .from('redemptions')
+                    .select('*, prizes(name)')
+                    .eq('student_id', currentStudent.id)
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                const tbody = document.getElementById('redemptionsList');
+                tbody.innerHTML = '';
+                if (!redemptions || redemptions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">暂无兑换记录</td></tr>';
+                    return;
+                }
+                redemptions.forEach(rec => {
+                    const row = tbody.insertRow();
+                    const statusClass = `status-${rec.status}`;
+                    const statusText = rec.status === 'pending' ? '待审核' : (rec.status === 'approved' ? '已兑换' : '已拒绝');
+                    row.innerHTML = `
+                        <td>${rec.prizes?.name || '已删除'}</td>
+                        <td>${rec.points_spent}</td>
+                        <td><span class="${statusClass}">${statusText}</span></td>
+                        <td>${new Date(rec.created_at).toLocaleString()}</td>
+                    `;
+                });
+            } catch (err) {
+                console.error('加载兑换记录失败', err);
+            }
+        }
+
+        // ========== 任务功能 ==========
+        async function loadTasks() {
+            if (!currentStudent) return;
+            try {
+                const { data: tasks, error } = await supabaseClient
+                    .from('tasks')
+                    .select('*')
+                    .eq('student_id', currentStudent.id)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                const container = document.getElementById('tasksList');
+                container.innerHTML = '';
+                if (!tasks || tasks.length === 0) {
+                    container.innerHTML = '<p>暂无待完成任务</p>';
+                    return;
+                }
+                tasks.forEach(task => {
+                    const card = document.createElement('div');
+                    card.className = 'task-card';
+                    card.innerHTML = `
+                        <h3>${task.title}</h3>
+                        <p>${task.description || ''}</p>
+                        ${task.word_limit ? `<p>字数要求: ${task.word_limit}</p>` : ''}
+                        <button class="btn" onclick="completeTask('${task.id}')">标记完成</button>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error('加载任务失败', err);
+            }
+        }
+
+        async function completeTask(taskId) {
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .update({ status: 'completed', completed_at: new Date() })
+                    .eq('id', taskId);
+                if (error) throw error;
+                alert('任务已完成');
+                loadTasks(); // 刷新任务列表
+            } catch (err) {
+                alert('操作失败：' + err.message);
+            }
         }
 
         checkLogin();
