@@ -6,7 +6,7 @@
     <title>教师管理后台 · 班级优化大师</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 完整样式（与之前相同，此处略，请复制你之前使用的完整样式） */
+        /* 完整样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -371,7 +371,7 @@
         </div>
     </div>
 
-    <!-- 学生编辑模态框 -->
+    <!-- 学生编辑模态框（编辑单个学生） -->
     <div id="studentModal" class="modal">
         <div class="modal-content">
             <h3>编辑学生</h3>
@@ -842,9 +842,19 @@
                     .eq('id', id);
                 if (updateError) throw updateError;
                 if (pointsAdjust !== 0) {
-                    const { error: rpcError } = await supabaseClient
-                        .rpc('increment_student_points', { student_id: id, points: pointsAdjust });
-                    if (rpcError) throw rpcError;
+                    // 直接更新积分
+                    const { data: student, error: fetchError } = await supabaseClient
+                        .from('students')
+                        .select('total_points')
+                        .eq('id', id)
+                        .single();
+                    if (fetchError) throw fetchError;
+                    const newTotal = (student.total_points || 0) + pointsAdjust;
+                    const { error: updatePointsError } = await supabaseClient
+                        .from('students')
+                        .update({ total_points: newTotal })
+                        .eq('id', id);
+                    if (updatePointsError) throw updatePointsError;
                 }
                 closeStudentModal();
                 loadStudents();
@@ -852,7 +862,7 @@
             } catch (err) { alert('保存失败：' + err.message); }
         }
 
-        // ========== 申请审核（彻底拆分，避免歧义）==========
+        // ========== 申请审核 ==========
         async function loadApplications() {
             const pendingTbody = document.getElementById('pendingList');
             const historyTbody = document.getElementById('historyList');
@@ -978,9 +988,9 @@
                         .eq('id', id);
                     if (updateError) throw updateError;
 
-                    // 2. 如果是通过，增加积分
+                    // 2. 如果是通过，增加/扣除积分
                     if (status === 'approved') {
-                        // 获取申请详情（明确字段）
+                        // 获取申请详情
                         const { data: app, error: fetchError } = await supabaseClient
                             .from('applications')
                             .select('student_id, custom_points, rule_id')
@@ -1002,13 +1012,20 @@
                         if (!points) throw new Error('无法确定分值');
                         const pointValue = rule.type === 'add' ? points : -points;
 
-                        // 调用 RPC
-                        const { error: rpcError } = await supabaseClient
-                            .rpc('increment_student_points', {
-                                student_id: app.student_id,
-                                points: pointValue
-                            });
-                        if (rpcError) throw rpcError;
+                        // 直接更新学生积分
+                        const { data: student, error: studentError } = await supabaseClient
+                            .from('students')
+                            .select('total_points')
+                            .eq('id', app.student_id)
+                            .maybeSingle();
+                        if (studentError) throw studentError;
+                        if (!student) throw new Error('学生不存在');
+                        const newTotal = (student.total_points || 0) + pointValue;
+                        const { error: updateStudentError } = await supabaseClient
+                            .from('students')
+                            .update({ total_points: newTotal })
+                            .eq('id', app.student_id);
+                        if (updateStudentError) throw updateStudentError;
                     }
                     successCount++;
                 } catch (err) {
@@ -1032,7 +1049,7 @@
                     .eq('id', id);
                 if (updateError) throw updateError;
 
-                // 2. 如果是通过，增加积分
+                // 2. 如果是通过，增加/扣除积分
                 if (status === 'approved') {
                     // 获取申请详情
                     const { data: app, error: fetchError } = await supabaseClient
@@ -1056,13 +1073,20 @@
                     if (!points) throw new Error('无法确定分值');
                     const pointValue = rule.type === 'add' ? points : -points;
 
-                    // 调用 RPC
-                    const { error: rpcError } = await supabaseClient
-                        .rpc('increment_student_points', {
-                            student_id: app.student_id,
-                            points: pointValue
-                        });
-                    if (rpcError) throw rpcError;
+                    // 直接更新学生积分
+                    const { data: student, error: studentError } = await supabaseClient
+                        .from('students')
+                        .select('total_points')
+                        .eq('id', app.student_id)
+                        .maybeSingle();
+                    if (studentError) throw studentError;
+                    if (!student) throw new Error('学生不存在');
+                    const newTotal = (student.total_points || 0) + pointValue;
+                    const { error: updateStudentError } = await supabaseClient
+                        .from('students')
+                        .update({ total_points: newTotal })
+                        .eq('id', app.student_id);
+                    if (updateStudentError) throw updateStudentError;
                 }
 
                 loadApplications();
