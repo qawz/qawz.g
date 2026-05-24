@@ -189,15 +189,14 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-    // Supabase 配置（请勿修改）
+    // 确保只声明一次 supabaseClient，不重复声明 supabase
     const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
     let currentProfile = null;
 
-    // 渲染登录界面（无默认邮箱）
     function renderLogin() {
         document.getElementById('app').innerHTML = `
             <div class="login-card">
@@ -210,7 +209,6 @@
                 <div id="loginError" class="error-msg"></div>
             </div>
         `;
-
         document.getElementById('loginBtn').onclick = async () => {
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
@@ -218,14 +216,13 @@
                 document.getElementById('loginError').innerText = '请填写邮箱和密码';
                 return;
             }
-            const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
             if (error) {
                 document.getElementById('loginError').innerText = error.message;
             } else {
                 location.reload();
             }
         };
-
         document.getElementById('registerBtn').onclick = async () => {
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
@@ -233,7 +230,7 @@
                 document.getElementById('loginError').innerText = '请填写邮箱和密码';
                 return;
             }
-            const { error } = await supabase.auth.signUp({ email, password: pass });
+            const { error } = await supabaseClient.auth.signUp({ email, password: pass });
             if (error) {
                 document.getElementById('loginError').innerText = error.message;
             } else {
@@ -242,9 +239,8 @@
         };
     }
 
-    // 加载故事列表
     async function loadStories() {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('stories')
             .select('*, profiles(username)')
             .eq('status', 'published')
@@ -256,14 +252,12 @@
         return data;
     }
 
-    // 获取用户角色显示文本
     function getRoleText(role) {
         if (role === 'admin') return '超级管理员';
         if (role === 'editor') return '编者';
         return '读者';
     }
 
-    // 渲染主界面
     async function renderMain() {
         const stories = await loadStories();
         const storyHtml = stories.map(s => `
@@ -305,7 +299,6 @@
             </div>
         `;
 
-        // 底部导航交互
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
                 const nav = item.dataset.nav;
@@ -318,22 +311,19 @@
         });
 
         document.getElementById('logoutBtn').onclick = async () => {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             location.reload();
         };
     }
 
-    // 初始化
     async function init() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         currentUser = user;
         if (!user) {
             renderLogin();
             return;
         }
-
-        // 获取用户角色
-        const { data: profile, error } = await supabase
+        const { data: profile, error } = await supabaseClient
             .from('profiles')
             .select('role, username')
             .eq('id', user.id)
