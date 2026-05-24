@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅读故事 - 小鹰宇宙</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0f1a24; color: #f0f3f8; font-family: system-ui; padding: 2rem; }
+        .container { max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 2rem; padding: 2rem; }
+        .chapter { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 1rem; margin: 1rem 0; cursor: pointer; }
+        .chapter:hover { background: rgba(100,180,250,0.2); }
+        .back { margin-bottom: 1rem; display: inline-block; color: #aaa; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back">← 返回首页</a>
+    <div id="storyInfo"></div>
+    <h3>📖 章节列表</h3>
+    <div id="chaptersList"></div>
+</div>
+<script>
+    const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const storyId = urlParams.get('id');
+
+    async function checkAuth() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            alert('请先登录后再阅读故事');
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    }
+
+    async function loadStory() {
+        const { data: story } = await supabase.from('stories').select('*, profiles(username)').eq('id', storyId).single();
+        if (!story) return;
+        document.getElementById('storyInfo').innerHTML = `
+            <h1>${story.title}</h1>
+            <p>${story.description || ''}</p>
+            <p>作者：${story.profiles?.username || '小鹰小编'}</p>
+        `;
+        const { data: chapters } = await supabase.from('chapters').select('*').eq('story_id', storyId).order('order_num');
+        const listDiv = document.getElementById('chaptersList');
+        listDiv.innerHTML = '';
+        chapters.forEach(ch => {
+            const div = document.createElement('div');
+            div.className = 'chapter';
+            div.innerHTML = `<strong>${ch.title}</strong><br><small>点击阅读</small>`;
+            div.onclick = () => {
+                alert(`📖 《${ch.title}》\n\n${ch.content || '本章内容尚未编写...'}`);
+            };
+            listDiv.appendChild(div);
+        });
+    }
+
+    (async () => {
+        if (await checkAuth()) loadStory();
+    })();
+</script>
+</body>
+</html>
