@@ -7,23 +7,23 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body {
-            background: white;
+            background: #eef2f5;
             font-family: system-ui;
             padding: 2rem;
             max-width: 800px;
             margin: 0 auto;
         }
-        .card {
-            background: #f8fafc;
+        .glass-card {
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(12px);
             border-radius: 1rem;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
-            border: 1px solid #e2e8f0;
         }
         input, textarea, button {
             margin: 0.5rem 0;
             padding: 0.6rem;
-            border-radius: 0.5rem;
+            border-radius: 2rem;
             border: 1px solid #cbd5e1;
             width: 100%;
         }
@@ -36,23 +36,29 @@
             padding: 0.6rem 1.2rem;
         }
         .chapter-item {
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #cbd5e1;
             padding: 0.8rem 0;
+        }
+        .back {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
-<a href="editor.html" style="color: #3b82f6; text-decoration: none;">← 返回编者后台</a>
-<h1>📝 管理章节</h1>
-<div class="card">
-    <h3>➕ 新增章节</h3>
+<a href="editor.html" class="back">← 返回编者后台</a>
+<h1>管理章节</h1>
+<div class="glass-card">
+    <h3>新增章节</h3>
     <input type="text" id="chapterTitle" placeholder="章节标题">
     <textarea id="chapterContent" rows="5" placeholder="章节内容"></textarea>
     <input type="number" id="chapterOrder" placeholder="顺序（数字越小越靠前）">
     <button id="addChapterBtn">添加章节</button>
 </div>
-<div class="card">
-    <h3>📋 现有章节</h3>
+<div class="glass-card">
+    <h3>现有章节</h3>
     <div id="chaptersList"></div>
 </div>
 
@@ -105,7 +111,6 @@
             loadChapters();
         }
     };
-
     loadChapters();
 </script>
 </body>
