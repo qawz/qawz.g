@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小鹰宇宙 · 故事创写平台</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -12,327 +13,274 @@
         }
 
         body {
-            background: white;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            color: #1e293b;
+            background: #eef2f5;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             padding-bottom: 80px;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem;
+        /* 液态玻璃容器 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s;
         }
 
-        /* 故事卡片网格 */
-        .story-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .story-card {
-            background: #f8fafc;
-            border-radius: 1rem;
-            padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-            cursor: pointer;
-            border: 1px solid #e2e8f0;
-        }
-
-        .story-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 20px rgba(0,0,0,0.1);
-            border-color: #cbd5e1;
-        }
-
-        .story-cover {
-            font-size: 3rem;
-            text-align: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .story-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .story-desc {
-            font-size: 0.85rem;
-            color: #475569;
-            margin-bottom: 0.75rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .story-meta {
-            font-size: 0.75rem;
-            color: #64748b;
+        /* 导航栏（液态玻璃） */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            padding: 0.8rem 2rem;
             display: flex;
             justify-content: space-between;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 0.5rem;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.5);
         }
-
-        /* 按钮 */
-        .btn {
-            background: #3b82f6;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 9999px;
-            color: white;
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #2c3e66;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: #2c3e66;
             font-weight: 500;
-            cursor: pointer;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
             transition: 0.2s;
         }
-
+        .nav-links a:hover {
+            background: rgba(59,130,246,0.2);
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255,255,255,0.5);
+            border-radius: 2rem;
+            padding: 0.3rem 1rem;
+        }
+        .role-badge {
+            font-size: 0.75rem;
+            background: rgba(0,0,0,0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+        }
+        button {
+            background: #3b82f6;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 1.5rem;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
         .btn-outline {
             background: transparent;
             border: 1px solid #3b82f6;
             color: #3b82f6;
         }
-
-        /* 登录卡片 */
-        .login-card {
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        .hero {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            color: #1e293b;
+        }
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+        .book-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 1rem;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.8);
+        }
+        .book-cover {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #d1d5db;
+        }
+        .book-info {
+            padding: 1rem;
+        }
+        .book-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+        .book-author {
+            font-size: 0.85rem;
+            color: #3b82f6;
+            margin-bottom: 0.5rem;
+        }
+        .book-desc {
+            font-size: 0.85rem;
+            color: #4b5563;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .auth-card {
             max-width: 400px;
             margin: 10vh auto;
-            background: white;
-            border-radius: 1.5rem;
             padding: 2rem;
-            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.1);
-            text-align: center;
         }
-
         input {
             width: 100%;
             padding: 12px;
             margin: 8px 0;
             border: 1px solid #cbd5e1;
-            border-radius: 9999px;
-            font-size: 1rem;
+            border-radius: 2rem;
+            background: rgba(255,255,255,0.8);
         }
-
         .error-msg {
             color: #ef4444;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             margin-top: 0.5rem;
         }
-
-        /* 用户信息栏 */
-        .user-bar {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding: 0.5rem 0;
-        }
-
-        .role-badge {
-            background: #e2e8f0;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        /* 底部液态玻璃导航栏 */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 20px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 100;
-        }
-
-        .nav-item {
+        .footer {
             text-align: center;
-            color: #64748b;
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: 0.2s;
-            cursor: pointer;
-            flex: 1;
-            font-weight: 500;
-        }
-
-        .nav-item.active {
-            color: #3b82f6;
-        }
-
-        .nav-item span:first-child {
-            display: block;
-            font-size: 1.25rem;
-            margin-bottom: 4px;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+            padding: 1.5rem;
+            color: #6c757d;
         }
     </style>
 </head>
 <body>
 <div id="app"></div>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-    // 确保只声明一次 supabaseClient，不重复声明 supabase
     const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
     let currentProfile = null;
 
     function renderLogin() {
         document.getElementById('app').innerHTML = `
-            <div class="login-card">
-                <h2>🦅 小鹰宇宙</h2>
+            <div class="glass-card auth-card">
+                <h2 style="margin-bottom:1rem;">小鹰宇宙</h2>
                 <p style="margin-bottom:1rem;">登录后即可阅读和创作故事</p>
                 <input type="email" id="email" placeholder="邮箱">
                 <input type="password" id="password" placeholder="密码">
-                <button class="btn" id="loginBtn" style="width:100%;">登录</button>
-                <button class="btn btn-outline" id="registerBtn" style="width:100%; margin-top:12px;">注册新账号</button>
+                <button id="loginBtn" style="width:100%;">登录</button>
+                <button id="registerBtn" class="btn-outline" style="width:100%; margin-top:0.5rem;">注册新账号</button>
                 <div id="loginError" class="error-msg"></div>
             </div>
         `;
         document.getElementById('loginBtn').onclick = async () => {
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
-            if (!email || !pass) {
-                document.getElementById('loginError').innerText = '请填写邮箱和密码';
-                return;
-            }
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
-            if (error) {
-                document.getElementById('loginError').innerText = error.message;
-            } else {
-                location.reload();
-            }
+            if (!email || !pass) { document.getElementById('loginError').innerText = '请填写邮箱和密码'; return; }
+            const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+            if (error) document.getElementById('loginError').innerText = error.message;
+            else location.reload();
         };
         document.getElementById('registerBtn').onclick = async () => {
             const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
-            if (!email || !pass) {
-                document.getElementById('loginError').innerText = '请填写邮箱和密码';
-                return;
-            }
-            const { error } = await supabaseClient.auth.signUp({ email, password: pass });
-            if (error) {
-                document.getElementById('loginError').innerText = error.message;
-            } else {
-                alert('注册成功！请登录邮箱验证（如果需要），现在可登录');
-            }
+            if (!email || !pass) { document.getElementById('loginError').innerText = '请填写邮箱和密码'; return; }
+            const { error } = await supabase.auth.signUp({ email, password: pass });
+            if (error) document.getElementById('loginError').innerText = error.message;
+            else alert('注册成功！请登录邮箱验证（如需），现在可登录');
         };
     }
 
     async function loadStories() {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('stories')
             .select('*, profiles(username)')
             .eq('status', 'published')
             .order('created_at', { ascending: false });
-        if (error) {
-            console.error(error);
-            return [];
-        }
+        if (error) return [];
         return data;
     }
 
-    function getRoleText(role) {
-        if (role === 'admin') return '超级管理员';
-        if (role === 'editor') return '编者';
-        return '读者';
-    }
-
-    async function renderMain() {
+    async function renderHome() {
         const stories = await loadStories();
-        const storyHtml = stories.map(s => `
-            <div class="story-card" onclick="alert('📖 《${s.title}》\\n\\n${s.description || '暂无简介'}\\n\\n作者：${s.profiles?.username || '小鹰小编'}')">
-                <div class="story-cover">${s.cover_emoji || '📖'}</div>
-                <div class="story-title">${s.title}</div>
-                <div class="story-desc">${s.description || ''}</div>
-                <div class="story-meta">
-                    <span>✍️ ${s.profiles?.username || '小鹰小编'}</span>
-                    <span>📅 ${new Date(s.created_at).toLocaleDateString()}</span>
+        const bookHtml = stories.map(s => `
+            <div class="book-card" onclick="alert('《${s.title}》\\n作者：${s.profiles?.username || '匿名'}\\n简介：${s.description || '暂无'}')">
+                <img class="book-cover" src="${s.cover_url || '/books/default.jpg'}" onerror="this.src='/books/default.jpg'">
+                <div class="book-info">
+                    <div class="book-title">${s.title}</div>
+                    <div class="book-author">${s.profiles?.username || '匿名'}</div>
+                    <div class="book-desc">${s.description || ''}</div>
                 </div>
             </div>
         `).join('');
+        const emptyHtml = stories.length === 0 ? '<div style="text-align:center; padding:2rem;">暂无图书，欢迎创作者投稿</div>' : '';
 
-        const emptyHtml = stories.length === 0 ? '<div style="text-align:center; padding:2rem;">✨ 暂无故事，快去创作吧 ~</div>' : '';
+        const isAdmin = currentProfile?.role === 'admin';
+        const isEditor = currentProfile?.role === 'editor';
 
         document.getElementById('app').innerHTML = `
+            <div class="navbar">
+                <div class="logo">小鹰宇宙</div>
+                <div class="nav-links">
+                    <a href="#" id="homeLink">首页</a>
+                    ${isEditor || isAdmin ? '<a href="#" id="editorLink">编者后台</a>' : ''}
+                    ${isAdmin ? '<a href="#" id="adminLink">管理后台</a>' : ''}
+                    <div class="user-info">
+                        <span>${currentProfile?.username || currentUser.email}</span>
+                        <span class="role-badge">${isAdmin ? '管理员' : (isEditor ? '编者' : '读者')}</span>
+                        <button id="logoutBtn">退出</button>
+                    </div>
+                </div>
+            </div>
             <div class="container">
-                <div class="user-bar">
-                    <span>👋 ${currentProfile?.username || currentUser.email}</span>
-                    <span class="role-badge">${getRoleText(currentProfile?.role)}</span>
-                    <button class="btn-outline btn" id="logoutBtn" style="padding:4px 12px;">退出</button>
+                <div class="hero">
+                    <h1>故事创写平台</h1>
+                    <p>发现精彩故事，创作你的世界</p>
                 </div>
-                <h2>📖 小鹰宇宙 · 故事集</h2>
-                <div class="story-grid">
-                    ${storyHtml || emptyHtml}
-                </div>
+                <div class="book-grid">${bookHtml || emptyHtml}</div>
             </div>
-            <div class="bottom-nav">
-                <div class="nav-item active" data-nav="home">
-                    <span>🏠</span><span>首页</span>
-                </div>
-                <div class="nav-item" data-nav="editor">
-                    <span>✍️</span><span>编者后台</span>
-                </div>
-                <div class="nav-item" data-nav="profile">
-                    <span>👤</span><span>我的</span>
-                </div>
-            </div>
+            <div class="footer">小鹰宇宙 · 共创故事空间</div>
         `;
 
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const nav = item.dataset.nav;
-                if (nav === 'editor') {
-                    window.location.href = 'editor.html';
-                } else if (nav === 'profile') {
-                    alert(`用户：${currentUser.email}\n角色：${getRoleText(currentProfile?.role)}`);
-                }
-            });
-        });
-
-        document.getElementById('logoutBtn').onclick = async () => {
-            await supabaseClient.auth.signOut();
-            location.reload();
-        };
+        document.getElementById('homeLink')?.addEventListener('click', (e) => { e.preventDefault(); renderHome(); });
+        document.getElementById('editorLink')?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'editor.html'; });
+        document.getElementById('adminLink')?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'admin.html'; });
+        document.getElementById('logoutBtn')?.addEventListener('click', async () => { await supabase.auth.signOut(); location.reload(); });
     }
 
     async function init() {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         currentUser = user;
-        if (!user) {
-            renderLogin();
-            return;
-        }
-        const { data: profile, error } = await supabaseClient
-            .from('profiles')
-            .select('role, username')
-            .eq('id', user.id)
-            .single();
+        if (!user) { renderLogin(); return; }
+        const { data: profile, error } = await supabase.from('profiles').select('role, username, bio').eq('id', user.id).single();
         if (error) console.error(error);
         currentProfile = profile || { role: 'reader', username: user.email.split('@')[0] };
-        await renderMain();
+        await renderHome();
     }
-
     init();
 </script>
 </body>
