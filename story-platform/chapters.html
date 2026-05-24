@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理章节 - 小鹰宇宙</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0f1a24; color: #f0f3f8; padding: 2rem; font-family: system-ui; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 1.5rem; padding: 1.5rem; margin-bottom: 2rem; }
+        input, textarea, button { margin: 0.5rem 0; padding: 0.6rem; border-radius: 30px; border: none; width: 100%; }
+        button { background: #667eea; color: white; cursor: pointer; width: auto; padding: 0.6rem 1.5rem; }
+        .chapter-item { border-bottom: 1px solid rgba(255,255,255,0.2); padding: 0.8rem 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="editor.html" style="color: #aaa;">← 返回编者后台</a>
+    <h1>📝 管理章节</h1>
+    <div class="card">
+        <h3>➕ 新增章节</h3>
+        <input type="text" id="chapterTitle" placeholder="章节标题">
+        <textarea id="chapterContent" rows="5" placeholder="章节内容"></textarea>
+        <input type="number" id="chapterOrder" placeholder="顺序（数字越小越靠前）">
+        <button id="addChapterBtn">添加章节</button>
+    </div>
+    <div class="card">
+        <h3>📋 现有章节</h3>
+        <div id="chaptersList"></div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const urlParams = new URLSearchParams(window.location.search);
+    const storyId = urlParams.get('storyId');
+
+    async function loadChapters() {
+        const { data } = await supabase.from('chapters').select('*').eq('story_id', storyId).order('order_num');
+        const container = document.getElementById('chaptersList');
+        container.innerHTML = '';
+        data.forEach(ch => {
+            const div = document.createElement('div');
+            div.className = 'chapter-item';
+            div.innerHTML = `
+                <strong>${ch.title}</strong> (顺序 ${ch.order_num})<br>
+                <small>内容预览：${ch.content?.substring(0, 50) || '无'}</small><br>
+                <button onclick="deleteChapter('${ch.id}')">删除</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    window.deleteChapter = async (id) => {
+        if (confirm('确定删除该章节吗？')) {
+            await supabase.from('chapters').delete().eq('id', id);
+            loadChapters();
+        }
+    };
+
+    document.getElementById('addChapterBtn').onclick = async () => {
+        const title = document.getElementById('chapterTitle').value;
+        const content = document.getElementById('chapterContent').value;
+        const order = parseInt(document.getElementById('chapterOrder').value);
+        if (!title) return alert('请输入章节标题');
+        const { error } = await supabase.from('chapters').insert({
+            story_id: storyId,
+            title,
+            content,
+            order_num: isNaN(order) ? 999 : order
+        });
+        if (error) alert('添加失败：' + error.message);
+        else {
+            document.getElementById('chapterTitle').value = '';
+            document.getElementById('chapterContent').value = '';
+            document.getElementById('chapterOrder').value = '';
+            loadChapters();
+        }
+    };
+
+    loadChapters();
+</script>
+</body>
+</html>
