@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册 - 小鹰宇宙</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: linear-gradient(145deg, #1a2a3a, #0f1a24); display: flex; justify-content: center; align-items: center; height: 100vh; font-family: system-ui; margin: 0; }
+        .card { background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); padding: 2rem; border-radius: 2rem; width: 350px; text-align: center; }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 30px; border: none; }
+        button { background: #667eea; color: white; cursor: pointer; }
+        .switch { margin-top: 1rem; color: #ccc; cursor: pointer; text-decoration: underline; }
+        .error { color: #ffaa88; font-size: 0.8rem; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>🦅 小鹰宇宙</h2>
+    <p id="formTitle">登录</p>
+    <input type="email" id="email" placeholder="邮箱">
+    <input type="password" id="password" placeholder="密码">
+    <input type="text" id="username" placeholder="用户名（注册时）" style="display:none;">
+    <button id="submitBtn">登录</button>
+    <div class="switch" id="switchBtn">没有账号？去注册</div>
+    <div id="errorMsg" class="error"></div>
+</div>
+<script>
+    const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let isLogin = true;
+    const emailInput = document.getElementById('email');
+    const passInput = document.getElementById('password');
+    const usernameInput = document.getElementById('username');
+    const submitBtn = document.getElementById('submitBtn');
+    const switchBtn = document.getElementById('switchBtn');
+    const formTitle = document.getElementById('formTitle');
+    const errorDiv = document.getElementById('errorMsg');
+
+    switchBtn.onclick = () => {
+        isLogin = !isLogin;
+        if (isLogin) {
+            formTitle.innerText = '登录';
+            submitBtn.innerText = '登录';
+            switchBtn.innerText = '没有账号？去注册';
+            usernameInput.style.display = 'none';
+        } else {
+            formTitle.innerText = '注册';
+            submitBtn.innerText = '注册';
+            switchBtn.innerText = '已有账号？去登录';
+            usernameInput.style.display = 'block';
+        }
+        errorDiv.innerText = '';
+    };
+
+    submitBtn.onclick = async () => {
+        const email = emailInput.value;
+        const password = passInput.value;
+        if (!email || !password) { errorDiv.innerText = '请填写完整'; return; }
+        if (isLogin) {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) errorDiv.innerText = error.message;
+            else window.location.href = 'index.html';
+        } else {
+            const username = usernameInput.value;
+            if (!username) { errorDiv.innerText = '请填写用户名'; return; }
+            const { data, error } = await supabase.auth.signUp({
+                email, password,
+                options: { data: { username, role: 'reader' } }
+            });
+            if (error) errorDiv.innerText = error.message;
+            else alert('注册成功！请登录邮箱验证（如需验证），现在可登录');
+        }
+    };
+</script>
+</body>
+</html>
