@@ -2,51 +2,147 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小鹰宇宙 · 故事创写平台</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background: white;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             color: #1e293b;
             padding-bottom: 80px;
         }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 1.5rem;
         }
+
+        /* 故事卡片网格 */
         .story-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             margin-top: 1.5rem;
         }
+
         .story-card {
             background: #f8fafc;
             border-radius: 1rem;
             padding: 1rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            transition: 0.2s;
+            transition: all 0.2s;
             cursor: pointer;
             border: 1px solid #e2e8f0;
         }
+
         .story-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+            border-color: #cbd5e1;
         }
-        .story-cover { font-size: 3rem; text-align: center; margin-bottom: 0.75rem; }
-        .story-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
-        .story-desc { font-size: 0.85rem; color: #475569; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .story-meta { font-size: 0.75rem; color: #64748b; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 0.5rem; }
-        .btn { background: #3b82f6; border: none; padding: 8px 20px; border-radius: 9999px; color: white; font-weight: 500; cursor: pointer; transition: 0.2s; }
-        .btn-outline { background: transparent; border: 1px solid #3b82f6; color: #3b82f6; }
-        .btn-outline:hover { background: #eff6ff; }
-        .login-card { max-width: 400px; margin: 10vh auto; background: white; border-radius: 1.5rem; padding: 2rem; box-shadow: 0 20px 35px -8px rgba(0,0,0,0.1); text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 9999px; font-size: 1rem; }
-        .error-msg { color: #ef4444; font-size: 0.875rem; margin-top: 0.5rem; }
+
+        .story-cover {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .story-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .story-desc {
+            font-size: 0.85rem;
+            color: #475569;
+            margin-bottom: 0.75rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .story-meta {
+            font-size: 0.75rem;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 0.5rem;
+        }
+
+        /* 按钮 */
+        .btn {
+            background: #3b82f6;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 9999px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        /* 登录卡片 */
+        .login-card {
+            max-width: 400px;
+            margin: 10vh auto;
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 9999px;
+            font-size: 1rem;
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        /* 用户信息栏 */
+        .user-bar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+        }
+
+        .role-badge {
+            background: #e2e8f0;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* 底部液态玻璃导航栏 */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -61,25 +157,48 @@
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             z-index: 100;
         }
-        .nav-item { text-align: center; color: #64748b; text-decoration: none; font-size: 0.75rem; transition: 0.2s; cursor: pointer; flex: 1; }
-        .nav-item.active { color: #3b82f6; }
-        .nav-item span:first-child { display: block; font-size: 1.5rem; margin-bottom: 4px; }
-        .user-info { display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-        h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+
+        .nav-item {
+            text-align: center;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            cursor: pointer;
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .nav-item.active {
+            color: #3b82f6;
+        }
+
+        .nav-item span:first-child {
+            display: block;
+            font-size: 1.25rem;
+            margin-bottom: 4px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body>
 <div id="app"></div>
 
 <script>
+    // Supabase 配置（请勿修改）
     const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-    // 修改：将实例名改为 supabaseClient，避免与全局 supabase 冲突
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentUser = null;
+    let currentProfile = null;
 
-    async function renderLogin() {
+    // 渲染登录界面
+    function renderLogin() {
         document.getElementById('app').innerHTML = `
             <div class="login-card">
                 <h2>🦅 小鹰宇宙</h2>
@@ -91,41 +210,52 @@
                 <div id="loginError" class="error-msg"></div>
             </div>
         `;
+
         document.getElementById('loginBtn').onclick = async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+            const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
             if (error) {
                 document.getElementById('loginError').innerText = error.message;
             } else {
                 location.reload();
             }
         };
+
         document.getElementById('registerBtn').onclick = async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
-            const { error } = await supabaseClient.auth.signUp({ email, password: pass });
+            const { error } = await supabase.auth.signUp({ email, password: pass });
             if (error) {
                 document.getElementById('loginError').innerText = error.message;
             } else {
-                alert('注册成功！请检查邮箱验证（如果需要），现在可登录');
+                alert('注册成功！请登录邮箱验证（如果需要），现在可登录');
             }
         };
     }
 
+    // 加载故事列表
     async function loadStories() {
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabase
             .from('stories')
             .select('*, profiles(username)')
             .eq('status', 'published')
             .order('created_at', { ascending: false });
         if (error) {
-            console.error('加载故事失败:', error);
+            console.error(error);
             return [];
         }
         return data;
     }
 
+    // 获取用户角色显示文本
+    function getRoleText(role) {
+        if (role === 'admin') return '超级管理员';
+        if (role === 'editor') return '编者';
+        return '读者';
+    }
+
+    // 渲染主界面
     async function renderMain() {
         const stories = await loadStories();
         const storyHtml = stories.map(s => `
@@ -139,12 +269,14 @@
                 </div>
             </div>
         `).join('');
-        const emptyHtml = stories.length === 0 ? '<div style="text-align:center; padding:2rem;">暂无故事，快去创作吧~</div>' : '';
+
+        const emptyHtml = stories.length === 0 ? '<div style="text-align:center; padding:2rem;">✨ 暂无故事，快去创作吧 ~</div>' : '';
 
         document.getElementById('app').innerHTML = `
             <div class="container">
-                <div class="user-info">
-                    <span>👋 你好，${currentUser.email}</span>
+                <div class="user-bar">
+                    <span>👋 ${currentProfile?.username || currentUser.email}</span>
+                    <span class="role-badge">${getRoleText(currentProfile?.role)}</span>
                     <button class="btn-outline btn" id="logoutBtn" style="padding:4px 12px;">退出</button>
                 </div>
                 <h2>📖 小鹰宇宙 · 故事集</h2>
@@ -156,11 +288,8 @@
                 <div class="nav-item active" data-nav="home">
                     <span>🏠</span><span>首页</span>
                 </div>
-                <div class="nav-item" data-nav="story">
-                    <span>📚</span><span>故事榜</span>
-                </div>
-                <div class="nav-item" data-nav="create">
-                    <span>✍️</span><span>创作</span>
+                <div class="nav-item" data-nav="editor">
+                    <span>✍️</span><span>编者后台</span>
                 </div>
                 <div class="nav-item" data-nav="profile">
                     <span>👤</span><span>我的</span>
@@ -168,35 +297,44 @@
             </div>
         `;
 
+        // 底部导航交互
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
                 const nav = item.dataset.nav;
-                if (nav === 'create') {
+                if (nav === 'editor') {
                     window.location.href = 'editor.html';
                 } else if (nav === 'profile') {
-                    alert(`用户：${currentUser.email}\n角色：游客（可申请成为编者）`);
-                } else if (nav === 'story') {
-                    alert('故事榜功能开发中，敬请期待');
+                    alert(`用户：${currentUser.email}\n角色：${getRoleText(currentProfile?.role)}`);
                 } else {
-                    // 首页已展示
+                    // 首页已展示，无需操作
                 }
             });
         });
 
         document.getElementById('logoutBtn').onclick = async () => {
-            await supabaseClient.auth.signOut();
+            await supabase.auth.signOut();
             location.reload();
         };
     }
 
+    // 初始化
     async function init() {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         currentUser = user;
         if (!user) {
             renderLogin();
-        } else {
-            await renderMain();
+            return;
         }
+
+        // 获取用户角色
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('role, username')
+            .eq('id', user.id)
+            .single();
+        if (error) console.error(error);
+        currentProfile = profile || { role: 'reader', username: user.email.split('@')[0] };
+        await renderMain();
     }
 
     init();
