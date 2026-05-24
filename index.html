@@ -49,40 +49,11 @@
         }
         .board {
             display: flex;
-            gap: 20px;
+            gap: 24px;
             flex-wrap: wrap;
             justify-content: center;
         }
-        /* 普通卡片样式（板块1-5） */
-        .card {
-            flex: 0 1 300px;
-            background: #fff;
-            border: 1px solid #eee;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            transition: opacity 0.3s;
-        }
-        .card h2 {
-            margin-top: 0;
-            color: #667eea;
-        }
-        .card p {
-            color: #555;
-        }
-        .btn {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            text-decoration: none;
-            margin-top: 10px;
-        }
-        .btn:hover {
-            background: #764ba2;
-        }
-        /* 液态玻璃卡片样式（板块6-8） */
+        /* 液态玻璃卡片样式（所有板块统一使用） */
         .glass-card {
             flex: 0 1 300px;
             background: rgba(255, 255, 255, 0.7);
@@ -90,7 +61,7 @@
             border-radius: 24px;
             padding: 24px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            transition: transform 0.2s, background 0.2s;
+            transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
             border: 1px solid rgba(255,255,255,0.5);
         }
         .glass-card:hover {
@@ -102,10 +73,12 @@
             margin-top: 0;
             color: #3b82f6;
             font-size: 1.5rem;
+            font-weight: 600;
         }
         .glass-card p {
             color: #475569;
             margin: 12px 0;
+            line-height: 1.5;
         }
         .glass-btn {
             display: inline-block;
@@ -116,6 +89,7 @@
             text-decoration: none;
             font-weight: 500;
             margin-top: 12px;
+            transition: background 0.2s;
         }
         .glass-btn:hover {
             background: #2563eb;
@@ -178,63 +152,31 @@
             const boardDiv = document.getElementById('board');
             boardDiv.innerHTML = '';
 
-            // 普通卡片渲染函数（板块1-5）
-            function createCard(title, desc, btnText, btnLink, isGlass = false) {
-                if (isGlass) {
-                    const card = document.createElement('div');
-                    card.className = 'glass-card';
-                    card.innerHTML = `
-                        <h3>${title || ''}</h3>
-                        <p>${desc || ''}</p>
-                        ${btnLink ? `<a href="${btnLink}" class="glass-btn" target="_blank">${btnText || '访问'}</a>` : ''}
-                    `;
-                    return card;
-                } else {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <h2>${title || ''}</h2>
-                        <p>${desc || ''}</p>
-                        ${btnLink ? `<a href="${btnLink}" class="btn" target="_blank">${btnText || '访问'}</a>` : ''}
-                    `;
-                    return card;
-                }
-            }
-
-            // 收集所有板块（最多8个），按 order 排序
+            // 收集所有板块（1-8）
             const boards = [];
-            // 板块1-5（普通卡片）
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 8; i++) {
                 const hidden = config[`board${i}_hidden`];
-                if (hidden) continue;
+                if (hidden) continue; // 隐藏的板块不渲染
                 boards.push({
-                    type: 'normal',
-                    title: config[`board${i}_title`],
-                    description: config[`board${i}_description`],
-                    buttonText: config[`board${i}_button_text`],
-                    buttonLink: config[`board${i}_button_link`],
-                    order: config[`board${i}_order`] || 0,
-                });
-            }
-            // 板块6-8（液态玻璃卡片）
-            for (let i = 6; i <= 8; i++) {
-                const hidden = config[`board${i}_hidden`];
-                if (hidden) continue;
-                boards.push({
-                    type: 'glass',
-                    title: config[`board${i}_title`],
-                    description: config[`board${i}_description`],
-                    buttonText: config[`board${i}_button_text`],
-                    buttonLink: config[`board${i}_button_link`],
+                    title: config[`board${i}_title`] || '',
+                    description: config[`board${i}_description`] || '',
+                    buttonText: config[`board${i}_button_text`] || '访问',
+                    buttonLink: config[`board${i}_button_link`] || '#',
                     order: config[`board${i}_order`] || 0,
                 });
             }
             // 按 order 排序
             boards.sort((a, b) => a.order - b.order);
-            // 渲染
+
+            // 统一使用液态玻璃卡片渲染
             boards.forEach(board => {
-                const isGlass = (board.type === 'glass');
-                const card = createCard(board.title, board.description, board.buttonText, board.buttonLink, isGlass);
+                const card = document.createElement('div');
+                card.className = 'glass-card';
+                card.innerHTML = `
+                    <h3>${board.title}</h3>
+                    <p>${board.description}</p>
+                    ${board.buttonLink && board.buttonLink !== '#' ? `<a href="${board.buttonLink}" class="glass-btn" target="_blank">${board.buttonText}</a>` : ''}
+                `;
                 boardDiv.appendChild(card);
             });
         }
