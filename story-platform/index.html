@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小鹰宇宙 · 故事创写平台</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background: linear-gradient(145deg, #1a2a3a, #0f1a24);
+            color: #f0f3f8;
+            padding: 2rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(12px);
+            padding: 0.8rem 2rem;
+            border-radius: 3rem;
+            margin-bottom: 2rem;
+        }
+        .logo { font-size: 1.8rem; font-weight: bold; background: linear-gradient(135deg, #FFF9C4, #B3E5FC); background-clip: text; -webkit-background-clip: text; color: transparent; }
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 2rem;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            transition: 0.2s;
+        }
+        .nav-links a:hover { background: rgba(100,180,250,0.3); }
+        .stories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .story-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(8px);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .story-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.2); }
+        .story-cover { font-size: 3rem; text-align: center; margin-bottom: 1rem; }
+        .story-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 0.5rem; }
+        .story-desc { font-size: 0.9rem; opacity: 0.8; margin-bottom: 1rem; }
+        .story-meta { font-size: 0.8rem; display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.3); padding-top: 0.8rem; }
+        .btn { background: #667eea; border: none; padding: 8px 20px; border-radius: 30px; color: white; cursor: pointer; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .auth-buttons { display: flex; gap: 10px; }
+        @media (max-width: 700px) { body { padding: 1rem; } .nav-links a { margin-left: 0.5rem; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="navbar">
+        <div class="logo">🦅 小鹰宇宙 · 故事创写平台</div>
+        <div class="user-info" id="userInfo">
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" class="btn">登录/注册</a>
+            </div>
+            <div id="userPanel" style="display:none;">
+                <span id="userName"></span>
+                <a href="editor.html" class="btn" id="editorBtn" style="margin-left:10px;">编者后台</a>
+                <button class="btn" id="logoutBtn">退出</button>
+            </div>
+        </div>
+    </div>
+    <h2>📖 所有故事</h2>
+    <div class="stories-grid" id="storiesGrid"></div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadStories() {
+        const { data, error } = await supabase
+            .from('stories')
+            .select('*, profiles(username)')
+            .eq('status', 'published')
+            .order('created_at', { ascending: false });
+        if (error) return console.error(error);
+        const grid = document.getElementById('storiesGrid');
+        grid.innerHTML = '';
+        data.forEach(story => {
+            const card = document.createElement('div');
+            card.className = 'story-card';
+            card.onclick = () => window.location.href = `story.html?id=${story.id}`;
+            card.innerHTML = `
+                <div class="story-cover">${story.cover_emoji || '📖'}</div>
+                <div class="story-title">${story.title}</div>
+                <div class="story-desc">${story.description || ''}</div>
+                <div class="story-meta">
+                    <span>✍️ ${story.profiles?.username || '小鹰小编'}</span>
+                    <span>📅 ${new Date(story.created_at).toLocaleDateString()}</span>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    async function checkUser() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            const { data: profile } = await supabase.from('profiles').select('username, role').eq('id', user.id).single();
+            document.getElementById('authButtons').style.display = 'none';
+            document.getElementById('userPanel').style.display = 'flex';
+            document.getElementById('userName').innerText = profile?.username || user.email;
+            if (profile?.role === 'editor' || profile?.role === 'admin') {
+                document.getElementById('editorBtn').style.display = 'inline-block';
+            } else {
+                document.getElementById('editorBtn').style.display = 'none';
+            }
+        } else {
+            document.getElementById('authButtons').style.display = 'flex';
+            document.getElementById('userPanel').style.display = 'none';
+        }
+    }
+
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        location.reload();
+    });
+
+    loadStories();
+    checkUser();
+</script>
+</body>
+</html>
