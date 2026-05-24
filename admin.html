@@ -236,61 +236,60 @@
             }
         }
 
-        async function saveConfig() {
-            const updates = {
-                container_opacity: parseInt(document.getElementById('containerOpacity').value),
-                container_blur: document.getElementById('containerBlur').checked,
-                card_opacity: parseInt(document.getElementById('cardOpacity').value),
-                background_video_url: document.getElementById('bgVideoUrl').value,
-                background_image: document.getElementById('bgImageUrl').value,
-                cards_per_page: parseInt(document.getElementById('cardsPerPage').value),
-            };
-            // 板块1-5
-            for (let i = 1; i <= 5; i++) {
-                updates[`board${i}_title`] = document.getElementById(`b${i}Title`).value;
-                updates[`board${i}_description`] = document.getElementById(`b${i}Desc`).value;
-                updates[`board${i}_button_text`] = document.getElementById(`b${i}BtnText`).value;
-                updates[`board${i}_button_link`] = document.getElementById(`b${i}BtnLink`).value;
-                updates[`board${i}_hidden`] = document.getElementById(`b${i}Hidden`).checked;
-                updates[`board${i}_order`] = parseInt(document.getElementById(`b${i}Order`).value) || 0;
-            }
-            // 板块6-8
-            for (let i = 6; i <= 8; i++) {
-                updates[`board${i}_title`] = document.getElementById(`b${i}Title`).value;
-                updates[`board${i}_description`] = document.getElementById(`b${i}Desc`).value;
-                updates[`board${i}_button_text`] = document.getElementById(`b${i}BtnText`).value;
-                updates[`board${i}_button_link`] = document.getElementById(`b${i}BtnLink`).value;
-                updates[`board${i}_hidden`] = document.getElementById(`b${i}Hidden`).checked;
-                updates[`board${i}_order`] = parseInt(document.getElementById(`b${i}Order`).value) || 0;
-            }
+async function saveConfig() {
+    const updates = {
+        container_opacity: parseInt(document.getElementById('containerOpacity').value),
+        container_blur: document.getElementById('containerBlur').checked,
+        card_opacity: parseInt(document.getElementById('cardOpacity').value),
+        background_video_url: document.getElementById('bgVideoUrl').value,
+        background_image: document.getElementById('bgImageUrl').value,
+        cards_per_page: parseInt(document.getElementById('cardsPerPage').value),
+    };
+    // 板块1-5
+    for (let i = 1; i <= 5; i++) {
+        updates[`board${i}_title`] = document.getElementById(`b${i}Title`).value;
+        updates[`board${i}_description`] = document.getElementById(`b${i}Desc`).value;
+        updates[`board${i}_button_text`] = document.getElementById(`b${i}BtnText`).value;
+        updates[`board${i}_button_link`] = document.getElementById(`b${i}BtnLink`).value;
+        updates[`board${i}_hidden`] = document.getElementById(`b${i}Hidden`).checked;
+        updates[`board${i}_order`] = parseInt(document.getElementById(`b${i}Order`).value) || 0;
+    }
+    // 板块6-8
+    for (let i = 6; i <= 8; i++) {
+        updates[`board${i}_title`] = document.getElementById(`b${i}Title`).value;
+        updates[`board${i}_description`] = document.getElementById(`b${i}Desc`).value;
+        updates[`board${i}_button_text`] = document.getElementById(`b${i}BtnText`).value;
+        updates[`board${i}_button_link`] = document.getElementById(`b${i}BtnLink`).value;
+        updates[`board${i}_hidden`] = document.getElementById(`b${i}Hidden`).checked;
+        updates[`board${i}_order`] = parseInt(document.getElementById(`b${i}Order`).value) || 0;
+    }
 
-            const newPass = document.getElementById('newPassword').value;
-            if (newPass) {
-                updates.admin_password = newPass;
-            }
+    const newPass = document.getElementById('newPassword').value;
+    if (newPass) {
+        updates.admin_password = newPass;
+    }
 
-            const { error } = await supabaseClient
-                .from('config')
-                .update(updates)
-                .eq('id', 1);
+    // 执行更新并检查影响行数
+    const { data, error } = await supabaseClient
+        .from('config')
+        .update(updates)
+        .eq('id', 1)
+        .select();  // 加上 .select() 可以返回更新后的数据
 
-            if (error) {
-                document.getElementById('saveMsg').innerText = '保存失败：' + error.message;
-                document.getElementById('saveMsg').style.color = 'red';
-            } else {
-                document.getElementById('saveMsg').innerText = '保存成功！';
-                document.getElementById('saveMsg').style.color = 'green';
-                document.getElementById('newPassword').value = '';
-                setTimeout(() => document.getElementById('saveMsg').innerText = '', 2000);
-            }
-        }
-
-        function logout() {
-            document.getElementById('loginBox').style.display = 'block';
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('password').value = '';
-            document.getElementById('newPassword').value = '';
-        }
+    if (error) {
+        document.getElementById('saveMsg').innerText = '保存失败：' + error.message;
+        document.getElementById('saveMsg').style.color = 'red';
+        console.error('更新错误:', error);
+    } else if (data && data.length === 0) {
+        document.getElementById('saveMsg').innerText = '保存失败：未找到对应的配置行（id=1）';
+        document.getElementById('saveMsg').style.color = 'red';
+    } else {
+        document.getElementById('saveMsg').innerText = '保存成功！';
+        document.getElementById('saveMsg').style.color = 'green';
+        document.getElementById('newPassword').value = '';
+        setTimeout(() => document.getElementById('saveMsg').innerText = '', 2000);
+    }
+}
     </script>
 </body>
 </html>
