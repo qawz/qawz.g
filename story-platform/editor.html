@@ -6,29 +6,65 @@
     <title>编者后台 - 小鹰宇宙</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0f1a24; color: #f0f3f8; padding: 2rem; font-family: system-ui; }
-        .card { background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 1.5rem; padding: 1.5rem; margin-bottom: 2rem; }
-        input, textarea, button { margin: 0.5rem 0; padding: 0.6rem; border-radius: 30px; border: none; width: 100%; max-width: 500px; }
-        button { background: #667eea; color: white; cursor: pointer; width: auto; padding: 0.6rem 1.5rem; }
-        .story-item { border-left: 3px solid #667eea; margin: 1rem 0; padding-left: 1rem; }
+        body {
+            background: white;
+            font-family: system-ui;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #f8fafc;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        input, textarea, button {
+            margin: 0.5rem 0;
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            width: 100%;
+            max-width: 500px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: auto;
+            padding: 0.6rem 1.2rem;
+        }
+        .story-item {
+            border-left: 3px solid #3b82f6;
+            margin: 1rem 0;
+            padding-left: 1rem;
+        }
+        .back {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>✍️ 编者后台</h1>
-    <div id="userRole"></div>
-    <hr>
-    <div class="card">
-        <h3>➕ 创建新故事</h3>
-        <input type="text" id="newTitle" placeholder="故事标题">
-        <input type="text" id="newCover" placeholder="封面 emoji (可选)">
-        <textarea id="newDesc" placeholder="故事简介"></textarea>
-        <button id="createStoryBtn">创建故事</button>
-    </div>
-    <div class="card">
-        <h3>📚 我的故事</h3>
-        <div id="storiesList"></div>
-    </div>
+<a href="index.html" class="back">← 返回首页</a>
+<h1>✍️ 编者后台</h1>
+<div id="userRole"></div>
+<hr>
+<div class="card">
+    <h3>➕ 创建新故事</h3>
+    <input type="text" id="newTitle" placeholder="故事标题">
+    <input type="text" id="newCover" placeholder="封面 emoji (例如 📖)">
+    <textarea id="newDesc" rows="3" placeholder="故事简介"></textarea>
+    <button id="createStoryBtn">创建故事</button>
+</div>
+<div class="card">
+    <h3>📚 我的故事</h3>
+    <div id="storiesList"></div>
 </div>
 
 <script>
@@ -39,7 +75,7 @@
 
     async function init() {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { window.location.href = 'login.html'; return; }
+        if (!user) { window.location.href = 'index.html'; return; }
         currentUser = user;
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
         userRole = profile?.role;
@@ -88,12 +124,12 @@
         }
     };
     document.getElementById('createStoryBtn').onclick = async () => {
-        const title = document.getElementById('newTitle').value;
-        const cover = document.getElementById('newCover').value;
-        const desc = document.getElementById('newDesc').value;
+        const title = document.getElementById('newTitle').value.trim();
+        const cover = document.getElementById('newCover').value.trim();
+        const desc = document.getElementById('newDesc').value.trim();
         if (!title) return alert('标题不能为空');
         await supabase.from('stories').insert({
-            title, cover_emoji: cover, description: desc, author_id: currentUser.id, status: 'published'
+            title, cover_emoji: cover || '📖', description: desc, author_id: currentUser.id, status: 'published'
         });
         document.getElementById('newTitle').value = '';
         document.getElementById('newCover').value = '';
