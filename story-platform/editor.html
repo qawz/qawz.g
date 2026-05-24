@@ -70,14 +70,14 @@
 <script>
     const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = null, userRole = null;
 
     async function init() {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { window.location.href = 'index.html'; return; }
         currentUser = user;
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        const { data: profile } = await supabaseClient.from('profiles').select('role').eq('id', user.id).single();
         userRole = profile?.role;
         document.getElementById('userRole').innerText = `角色：${userRole === 'admin' ? '超级管理员' : (userRole === 'editor' ? '编者' : '读者')}`;
         if (userRole !== 'editor' && userRole !== 'admin') {
@@ -89,7 +89,7 @@
     }
 
     async function loadStories() {
-        let query = supabase.from('stories').select('*, profiles(username)');
+        let query = supabaseClient.from('stories').select('*, profiles(username)');
         if (userRole !== 'admin') query = query.eq('author_id', currentUser.id);
         const { data } = await query.order('created_at', { ascending: false });
         const container = document.getElementById('storiesList');
@@ -111,7 +111,7 @@
 
     window.editStory = async (id) => {
         const newTitle = prompt('新标题');
-        if (newTitle) await supabase.from('stories').update({ title: newTitle }).eq('id', id);
+        if (newTitle) await supabaseClient.from('stories').update({ title: newTitle }).eq('id', id);
         loadStories();
     };
     window.manageChapters = (id) => {
@@ -119,7 +119,7 @@
     };
     window.deleteStory = async (id) => {
         if (confirm('删除故事会同时删除所有章节，确定吗？')) {
-            await supabase.from('stories').delete().eq('id', id);
+            await supabaseClient.from('stories').delete().eq('id', id);
             loadStories();
         }
     };
@@ -128,7 +128,7 @@
         const cover = document.getElementById('newCover').value.trim();
         const desc = document.getElementById('newDesc').value.trim();
         if (!title) return alert('标题不能为空');
-        await supabase.from('stories').insert({
+        await supabaseClient.from('stories').insert({
             title, cover_emoji: cover || '📖', description: desc, author_id: currentUser.id, status: 'published'
         });
         document.getElementById('newTitle').value = '';
