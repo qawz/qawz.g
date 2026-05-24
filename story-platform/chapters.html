@@ -6,29 +6,54 @@
     <title>管理章节 - 小鹰宇宙</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0f1a24; color: #f0f3f8; padding: 2rem; font-family: system-ui; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .card { background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 1.5rem; padding: 1.5rem; margin-bottom: 2rem; }
-        input, textarea, button { margin: 0.5rem 0; padding: 0.6rem; border-radius: 30px; border: none; width: 100%; }
-        button { background: #667eea; color: white; cursor: pointer; width: auto; padding: 0.6rem 1.5rem; }
-        .chapter-item { border-bottom: 1px solid rgba(255,255,255,0.2); padding: 0.8rem 0; }
+        body {
+            background: white;
+            font-family: system-ui;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #f8fafc;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+        input, textarea, button {
+            margin: 0.5rem 0;
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            width: 100%;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: auto;
+            padding: 0.6rem 1.2rem;
+        }
+        .chapter-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0.8rem 0;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <a href="editor.html" style="color: #aaa;">← 返回编者后台</a>
-    <h1>📝 管理章节</h1>
-    <div class="card">
-        <h3>➕ 新增章节</h3>
-        <input type="text" id="chapterTitle" placeholder="章节标题">
-        <textarea id="chapterContent" rows="5" placeholder="章节内容"></textarea>
-        <input type="number" id="chapterOrder" placeholder="顺序（数字越小越靠前）">
-        <button id="addChapterBtn">添加章节</button>
-    </div>
-    <div class="card">
-        <h3>📋 现有章节</h3>
-        <div id="chaptersList"></div>
-    </div>
+<a href="editor.html" style="color: #3b82f6; text-decoration: none;">← 返回编者后台</a>
+<h1>📝 管理章节</h1>
+<div class="card">
+    <h3>➕ 新增章节</h3>
+    <input type="text" id="chapterTitle" placeholder="章节标题">
+    <textarea id="chapterContent" rows="5" placeholder="章节内容"></textarea>
+    <input type="number" id="chapterOrder" placeholder="顺序（数字越小越靠前）">
+    <button id="addChapterBtn">添加章节</button>
+</div>
+<div class="card">
+    <h3>📋 现有章节</h3>
+    <div id="chaptersList"></div>
 </div>
 
 <script>
@@ -47,7 +72,7 @@
             div.className = 'chapter-item';
             div.innerHTML = `
                 <strong>${ch.title}</strong> (顺序 ${ch.order_num})<br>
-                <small>内容预览：${ch.content?.substring(0, 50) || '无'}</small><br>
+                <small>内容预览：${ch.content?.substring(0, 80) || '无'}</small><br>
                 <button onclick="deleteChapter('${ch.id}')">删除</button>
             `;
             container.appendChild(div);
@@ -62,7 +87,7 @@
     };
 
     document.getElementById('addChapterBtn').onclick = async () => {
-        const title = document.getElementById('chapterTitle').value;
+        const title = document.getElementById('chapterTitle').value.trim();
         const content = document.getElementById('chapterContent').value;
         const order = parseInt(document.getElementById('chapterOrder').value);
         if (!title) return alert('请输入章节标题');
