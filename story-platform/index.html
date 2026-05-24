@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小鹰宇宙 · 故事创写平台</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -188,6 +187,7 @@
 <body>
 <div id="app"></div>
 
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
     // Supabase 配置（请勿修改）
     const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
@@ -197,13 +197,13 @@
     let currentUser = null;
     let currentProfile = null;
 
-    // 渲染登录界面
+    // 渲染登录界面（无默认邮箱）
     function renderLogin() {
         document.getElementById('app').innerHTML = `
             <div class="login-card">
                 <h2>🦅 小鹰宇宙</h2>
                 <p style="margin-bottom:1rem;">登录后即可阅读和创作故事</p>
-                <input type="email" id="email" placeholder="邮箱" value="wmz17wmz@outlook.com">
+                <input type="email" id="email" placeholder="邮箱">
                 <input type="password" id="password" placeholder="密码">
                 <button class="btn" id="loginBtn" style="width:100%;">登录</button>
                 <button class="btn btn-outline" id="registerBtn" style="width:100%; margin-top:12px;">注册新账号</button>
@@ -212,8 +212,12 @@
         `;
 
         document.getElementById('loginBtn').onclick = async () => {
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
+            if (!email || !pass) {
+                document.getElementById('loginError').innerText = '请填写邮箱和密码';
+                return;
+            }
             const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
             if (error) {
                 document.getElementById('loginError').innerText = error.message;
@@ -223,8 +227,12 @@
         };
 
         document.getElementById('registerBtn').onclick = async () => {
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const pass = document.getElementById('password').value;
+            if (!email || !pass) {
+                document.getElementById('loginError').innerText = '请填写邮箱和密码';
+                return;
+            }
             const { error } = await supabase.auth.signUp({ email, password: pass });
             if (error) {
                 document.getElementById('loginError').innerText = error.message;
@@ -305,8 +313,6 @@
                     window.location.href = 'editor.html';
                 } else if (nav === 'profile') {
                     alert(`用户：${currentUser.email}\n角色：${getRoleText(currentProfile?.role)}`);
-                } else {
-                    // 首页已展示，无需操作
                 }
             });
         });
