@@ -6,25 +6,27 @@
     <title>编者后台 - 小鹰宇宙</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #f5f7fb;
+            background: #eef2f5;
             font-family: system-ui;
-            padding: 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
+            padding-bottom: 80px;
         }
-        .card {
-            background: white;
-            border-radius: 1rem;
+        .glass-card {
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(12px);
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.3);
             padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            transition: 0.2s;
         }
         input, textarea, button {
             margin: 0.5rem 0;
             padding: 0.6rem;
-            border-radius: 0.5rem;
+            border-radius: 2rem;
             border: 1px solid #cbd5e1;
+            background: rgba(255,255,255,0.8);
             width: 100%;
             max-width: 500px;
         }
@@ -41,41 +43,71 @@
             margin: 1rem 0;
             padding-left: 1rem;
         }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px;
+            border-top: 1px solid rgba(255,255,255,0.5);
+            z-index: 100;
+        }
+        .nav-item {
+            text-align: center;
+            color: #2c3e66;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem;
+            border-radius: 2rem;
+            transition: 0.2s;
+        }
+        .nav-item:hover {
+            background: rgba(59,130,246,0.2);
+        }
         .back {
             display: inline-block;
             margin-bottom: 1rem;
             color: #3b82f6;
             text-decoration: none;
         }
-        .chapter-item {
-            border-bottom: 1px solid #e2e8f0;
-            padding: 0.8rem 0;
-        }
     </style>
 </head>
 <body>
-<a href="index.html" class="back">← 返回首页</a>
-<h1>编者后台</h1>
-<div id="userRole"></div>
-<hr>
+<div class="container" style="max-width:1000px; margin:2rem auto; padding:0 1.5rem;">
+    <a href="index.html" class="back">← 返回首页</a>
+    <h1>编者后台</h1>
+    <div id="userRole"></div>
 
-<div class="card">
-    <h3>个人简介</h3>
-    <textarea id="userBio" rows="3" placeholder="介绍一下自己吧"></textarea>
-    <button id="updateBioBtn">更新简介</button>
-</div>
+    <div class="glass-card">
+        <h3>个人简介</h3>
+        <textarea id="userBio" rows="3" placeholder="介绍一下自己吧"></textarea>
+        <button id="updateBioBtn">更新简介</button>
+    </div>
 
-<div class="card">
-    <h3>创建新书</h3>
-    <input type="text" id="newTitle" placeholder="书名">
-    <input type="text" id="newCoverUrl" placeholder="封面图片路径 (如 /books/cover.jpg)">
-    <textarea id="newDesc" rows="3" placeholder="简介"></textarea>
-    <button id="createStoryBtn">创建图书</button>
-</div>
+    <div class="glass-card">
+        <h3>创建新书</h3>
+        <input type="text" id="newTitle" placeholder="书名">
+        <input type="text" id="newCoverUrl" placeholder="封面图片路径 (如 /books/cover.jpg)">
+        <textarea id="newDesc" rows="3" placeholder="简介"></textarea>
+        <button id="createStoryBtn">创建图书</button>
+    </div>
 
-<div class="card">
-    <h3>我的图书</h3>
-    <div id="storiesList"></div>
+    <div class="glass-card">
+        <h3>我的图书</h3>
+        <div id="storiesList"></div>
+    </div>
+
+    <!-- 底部液态玻璃导航栏 -->
+    <div class="bottom-nav">
+        <a href="index.html" class="nav-item">首页</a>
+        <a href="#" class="nav-item" id="myProfileNav">我的</a>
+        <a href="editor.html" class="nav-item">编者后台</a>
+    </div>
 </div>
 
 <script>
@@ -157,6 +189,10 @@
         document.getElementById('newDesc').value = '';
         loadStories();
     };
+    document.getElementById('myProfileNav')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert(`用户：${currentUser.email}\n简介：${document.getElementById('userBio').value || '未填写'}`);
+    });
     init();
 </script>
 </body>
