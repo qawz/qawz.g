@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 小鹰宇宙</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background: #f5f7fb;
+            font-family: system-ui;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        input, select, textarea, button {
+            margin: 0.5rem 0;
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            width: 100%;
+            max-width: 500px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: auto;
+            padding: 0.6rem 1.2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0.5rem;
+            overflow: auto;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        th { background: #f1f5f9; }
+        .back {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        .story-item {
+            border-left: 3px solid #3b82f6;
+            margin: 1rem 0;
+            padding-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+<a href="index.html" class="back">← 返回首页</a>
+<h1>管理后台</h1>
+<div id="authCheck"></div>
+
+<div class="card">
+    <h2>用户管理</h2>
+    <table id="usersTable">
+        <thead><tr><th>邮箱</th><th>用户名</th><th>角色</th><th>简介</th><th>操作</th></tr></thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>所有图书</h2>
+    <div id="allStoriesList"></div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function checkAdmin() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { window.location.href = 'index.html'; return false; }
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (profile?.role !== 'admin') {
+            document.getElementById('authCheck').innerHTML = '<p style="color:red;">您没有管理员权限</p>';
+            return false;
+        }
+        return true;
+    }
+
+    async function loadUsers() {
+        const { data: profiles, error } = await supabase.from('profiles').select('*');
+        if (error) return console.error(error);
+        // 注意：profiles 表没有 email 字段，需要从 auth.users 获取，为了简化，这里只显示 username
+        const tableBody = document.querySelector('#usersTable tbody');
+        tableBody.innerHTML = '';
+        for (const p of profiles) {
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td>${p.email || '需关联auth.users'}</td>
+                <td>${p.username || '-'}</td>
+                <td>
+                    <select data-id="${p.id}" class="role-select">
+                        <option value="reader" ${p.role === 'reader' ? 'selected' : ''}>读者</option>
+                        <option value="editor" ${p.role === 'editor' ? 'selected' : ''}>编者</option>
+                        <option value="admin" ${p.role === 'admin' ? 'selected' : ''}>管理员</option>
+                    </select>
+                </td>
+                <td><input type="text" data-id="${p.id}" class="bio-input" value="${p.bio || ''}" placeholder="简介"></td>
+                <td><button class="save-user-btn" data-id="${p.id}">保存</button></td>
+            `;
+        }
+        document.querySelectorAll('.save-user-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.dataset.id;
+                const newRole = document.querySelector(`.role-select[data-id="${id}"]`).value;
+                const newBio = document.querySelector(`.bio-input[data-id="${id}"]`).value;
+                const { error } = await supabase.from('profiles').update({ role: newRole, bio: newBio }).eq('id', id);
+                if (error) alert('更新失败：' + error.message);
+                else alert('已保存');
+            };
+        });
+    }
+
+    async function loadAllStories() {
+        const { data: stories, error } = await supabase.from('stories').select('*, profiles(username)').order('created_at', { ascending: false });
+        if (error) return console.error(error);
+        const container = document.getElementById('allStoriesList');
+        container.innerHTML = '';
+        for (const story of stories) {
+            const div = document.createElement('div');
+            div.className = 'story-item';
+            div.innerHTML = `
+                <strong>${story.title}</strong> (作者：${story.profiles?.username || '未知'})
+                <br><button onclick="deleteStory('${story.id}')">删除</button>
+                <hr>
+            `;
+            container.appendChild(div);
+        }
+    }
+
+    window.deleteStory = async (id) => {
+        if (confirm('删除图书会同时删除所有章节，确定吗？')) {
+            await supabase.from('stories').delete().eq('id', id);
+            loadAllStories();
+        }
+    };
+
+    (async () => {
+        if (await checkAdmin()) {
+            await loadUsers();
+            await loadAllStories();
+        }
+    })();
+</script>
+</body>
+</html>
