@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编者后台 - 小鹰宇宙</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0f1a24; color: #f0f3f8; padding: 2rem; font-family: system-ui; }
+        .card { background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 1.5rem; padding: 1.5rem; margin-bottom: 2rem; }
+        input, textarea, button { margin: 0.5rem 0; padding: 0.6rem; border-radius: 30px; border: none; width: 100%; max-width: 500px; }
+        button { background: #667eea; color: white; cursor: pointer; width: auto; padding: 0.6rem 1.5rem; }
+        .story-item { border-left: 3px solid #667eea; margin: 1rem 0; padding-left: 1rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>✍️ 编者后台</h1>
+    <div id="userRole"></div>
+    <hr>
+    <div class="card">
+        <h3>➕ 创建新故事</h3>
+        <input type="text" id="newTitle" placeholder="故事标题">
+        <input type="text" id="newCover" placeholder="封面 emoji (可选)">
+        <textarea id="newDesc" placeholder="故事简介"></textarea>
+        <button id="createStoryBtn">创建故事</button>
+    </div>
+    <div class="card">
+        <h3>📚 我的故事</h3>
+        <div id="storiesList"></div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentUser = null, userRole = null;
+
+    async function init() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { window.location.href = 'login.html'; return; }
+        currentUser = user;
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        userRole = profile?.role;
+        document.getElementById('userRole').innerText = `角色：${userRole === 'admin' ? '超级管理员' : (userRole === 'editor' ? '编者' : '读者')}`;
+        if (userRole !== 'editor' && userRole !== 'admin') {
+            alert('您没有编者权限，请联系管理员');
+            window.location.href = 'index.html';
+            return;
+        }
+        loadStories();
+    }
+
+    async function loadStories() {
+        let query = supabase.from('stories').select('*, profiles(username)');
+        if (userRole !== 'admin') query = query.eq('author_id', currentUser.id);
+        const { data } = await query.order('created_at', { ascending: false });
+        const container = document.getElementById('storiesList');
+        container.innerHTML = '';
+        for (const story of data) {
+            const div = document.createElement('div');
+            div.className = 'story-item';
+            div.innerHTML = `
+                <strong>${story.title}</strong> ${story.status === 'draft' ? '(草稿)' : ''}
+                <br><small>作者：${story.profiles?.username || '未知'}</small>
+                <br><button onclick="editStory('${story.id}')">编辑信息</button>
+                <button onclick="manageChapters('${story.id}')">管理章节</button>
+                <button onclick="deleteStory('${story.id}')">删除</button>
+                <hr>
+            `;
+            container.appendChild(div);
+        }
+    }
+
+    window.editStory = async (id) => {
+        const newTitle = prompt('新标题');
+        if (newTitle) await supabase.from('stories').update({ title: newTitle }).eq('id', id);
+        loadStories();
+    };
+    window.manageChapters = (id) => {
+        window.location.href = `chapters.html?storyId=${id}`;
+    };
+    window.deleteStory = async (id) => {
+        if (confirm('删除故事会同时删除所有章节，确定吗？')) {
+            await supabase.from('stories').delete().eq('id', id);
+            loadStories();
+        }
+    };
+    document.getElementById('createStoryBtn').onclick = async () => {
+        const title = document.getElementById('newTitle').value;
+        const cover = document.getElementById('newCover').value;
+        const desc = document.getElementById('newDesc').value;
+        if (!title) return alert('标题不能为空');
+        await supabase.from('stories').insert({
+            title, cover_emoji: cover, description: desc, author_id: currentUser.id, status: 'published'
+        });
+        document.getElementById('newTitle').value = '';
+        document.getElementById('newCover').value = '';
+        document.getElementById('newDesc').value = '';
+        loadStories();
+    };
+    init();
+</script>
+</body>
+</html>
