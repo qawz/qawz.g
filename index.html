@@ -3,239 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小鹰宇宙 · 故事创写平台</title>
+    <title>qawz 的小站</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            background: #f5f7fb;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            color: #1e293b;
-        }
-        .navbar {
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        .logo { font-size: 1.5rem; font-weight: bold; color: #3b82f6; }
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
-        .nav-links a {
-            color: #475569;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .nav-links a:hover { color: #3b82f6; }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            background: #f1f5f9;
-            padding: 0.3rem 0.8rem;
-            border-radius: 2rem;
-        }
-        .role-badge {
-            background: #e2e8f0;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-        }
-        button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.85rem;
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid #3b82f6;
-            color: #3b82f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }
         .container {
             max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            position: relative;
+            z-index: 1;
+            transition: background 0.3s, backdrop-filter 0.3s;
         }
-        .hero { text-align: center; margin-bottom: 3rem; }
-        .hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
-        .hero p { color: #64748b; }
-        .book-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 2rem;
+        .container.blur {
+            backdrop-filter: blur(10px);
         }
-        .book-card {
-            background: white;
-            border-radius: 1rem;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
+        h1 {
+            color: #333;
         }
-        .book-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.12); }
-        .book-cover {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            background: #e2e8f0;
+        .admin-link {
+            text-align: right;
+            margin-bottom: 20px;
         }
-        .book-info { padding: 1rem; }
-        .book-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem; }
-        .book-author { font-size: 0.85rem; color: #3b82f6; margin-bottom: 0.5rem; }
-        .book-desc {
-            font-size: 0.85rem;
-            color: #64748b;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        .admin-link a {
+            color: #999;
+            text-decoration: none;
+            font-size: 0.9em;
         }
-        .footer {
+        .board {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        /* 普通卡片样式（板块1-5） */
+        .card {
+            flex: 0 1 300px;
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: opacity 0.3s;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .card p {
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #764ba2;
+        }
+        /* 液态玻璃卡片样式（板块6-8） */
+        .glass-card {
+            flex: 0 1 300px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background 0.2s;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+        }
+        .glass-card h3 {
+            margin-top: 0;
+            color: #3b82f6;
+            font-size: 1.5rem;
+        }
+        .glass-card p {
+            color: #475569;
+            margin: 12px 0;
+        }
+        .glass-btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 12px;
+        }
+        .glass-btn:hover {
+            background: #2563eb;
+        }
+        footer {
+            margin-top: 40px;
             text-align: center;
-            padding: 2rem;
-            color: #94a3b8;
-            border-top: 1px solid #e2e8f0;
-            margin-top: 3rem;
+            color: #aaa;
         }
-        .auth-card {
-            max-width: 400px;
-            margin: 10vh auto;
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.1);
+        #bg-video, #bg-iframe {
+            position: fixed;
+            top: 0;
+            left: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            object-fit: cover;
+            border: none;
+            pointer-events: none;
         }
-        .auth-card h2 { margin-bottom: 1rem; }
-        input {
+        #bg-iframe {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #cbd5e1;
-            border-radius: 0.5rem;
+            height: 100%;
+            pointer-events: none;
         }
-        .error-msg { color: #ef4444; font-size: 0.875rem; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
-<div id="app"></div>
+    <div class="container" id="mainContainer">
+        <div class="admin-link">
+            <a href="admin.html">⚙️ 管理后台</a>
+        </div>
+        <h1>qawz 的小站</h1>
+        <div class="board" id="board"></div>
+        <footer>Hosted on GitHub Pages · 2026</footer>
+    </div>
 
-<script>
-    const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <script>
+        // Supabase 配置
+        const SUPABASE_URL = 'https://tuuyhasycrdbgqzrcbhp.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dXloYXN5Y3JkYmdxenJjYmhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxODIyMjYsImV4cCI6MjA4Nzc1ODIyNn0.E-NrBCqbRIINpyPhtpw20H7iMiUnJmJ0aCv7QjXdE8k';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let currentUser = null;
-    let currentProfile = null;
+        async function loadConfig() {
+            const { data, error } = await supabaseClient
+                .from('config')
+                .select('*')
+                .eq('id', 1)
+                .single();
+            if (error) {
+                console.error('读取配置失败', error);
+                return null;
+            }
+            return data;
+        }
 
-    function renderLogin() {
-        document.getElementById('app').innerHTML = `
-            <div class="auth-card">
-                <h2>小鹰宇宙</h2>
-                <p style="margin-bottom:1rem;">登录后即可阅读和创作故事</p>
-                <input type="email" id="email" placeholder="邮箱">
-                <input type="password" id="password" placeholder="密码">
-                <button id="loginBtn">登录</button>
-                <button id="registerBtn" class="btn-outline" style="margin-top:0.5rem;">注册新账号</button>
-                <div id="loginError" class="error-msg"></div>
-            </div>
-        `;
-        document.getElementById('loginBtn').onclick = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
-            if (!email || !pass) { document.getElementById('loginError').innerText = '请填写邮箱和密码'; return; }
-            const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-            if (error) document.getElementById('loginError').innerText = error.message;
-            else location.reload();
-        };
-        document.getElementById('registerBtn').onclick = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
-            if (!email || !pass) { document.getElementById('loginError').innerText = '请填写邮箱和密码'; return; }
-            const { error } = await supabase.auth.signUp({ email, password: pass });
-            if (error) document.getElementById('loginError').innerText = error.message;
-            else alert('注册成功！请登录邮箱验证（如需），现在可登录');
-        };
-    }
+        function renderBoard(config) {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
 
-    async function loadStories() {
-        const { data, error } = await supabase
-            .from('stories')
-            .select('*, profiles(username)')
-            .eq('status', 'published')
-            .order('created_at', { ascending: false });
-        if (error) { console.error(error); return []; }
-        return data;
-    }
+            // 普通卡片渲染函数（板块1-5）
+            function createCard(title, desc, btnText, btnLink, isGlass = false) {
+                if (isGlass) {
+                    const card = document.createElement('div');
+                    card.className = 'glass-card';
+                    card.innerHTML = `
+                        <h3>${title || ''}</h3>
+                        <p>${desc || ''}</p>
+                        ${btnLink ? `<a href="${btnLink}" class="glass-btn" target="_blank">${btnText || '访问'}</a>` : ''}
+                    `;
+                    return card;
+                } else {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h2>${title || ''}</h2>
+                        <p>${desc || ''}</p>
+                        ${btnLink ? `<a href="${btnLink}" class="btn" target="_blank">${btnText || '访问'}</a>` : ''}
+                    `;
+                    return card;
+                }
+            }
 
-    async function renderHome() {
-        const stories = await loadStories();
-        const bookHtml = stories.map(s => `
-            <div class="book-card" onclick="alert('《${s.title}》\\n作者：${s.profiles?.username || '匿名'}\\n简介：${s.description || '暂无'}')">
-                <img class="book-cover" src="${s.cover_url || '/books/default.jpg'}" alt="封面" onerror="this.src='/books/default.jpg'">
-                <div class="book-info">
-                    <div class="book-title">${s.title}</div>
-                    <div class="book-author">${s.profiles?.username || '匿名'}</div>
-                    <div class="book-desc">${s.description || ''}</div>
-                </div>
-            </div>
-        `).join('');
-        const emptyHtml = stories.length === 0 ? '<div style="text-align:center; padding:2rem;">暂无图书，欢迎创作者投稿</div>' : '';
+            // 收集所有板块（最多8个），按 order 排序
+            const boards = [];
+            // 板块1-5（普通卡片）
+            for (let i = 1; i <= 5; i++) {
+                const hidden = config[`board${i}_hidden`];
+                if (hidden) continue;
+                boards.push({
+                    type: 'normal',
+                    title: config[`board${i}_title`],
+                    description: config[`board${i}_description`],
+                    buttonText: config[`board${i}_button_text`],
+                    buttonLink: config[`board${i}_button_link`],
+                    order: config[`board${i}_order`] || 0,
+                });
+            }
+            // 板块6-8（液态玻璃卡片）
+            for (let i = 6; i <= 8; i++) {
+                const hidden = config[`board${i}_hidden`];
+                if (hidden) continue;
+                boards.push({
+                    type: 'glass',
+                    title: config[`board${i}_title`],
+                    description: config[`board${i}_description`],
+                    buttonText: config[`board${i}_button_text`],
+                    buttonLink: config[`board${i}_button_link`],
+                    order: config[`board${i}_order`] || 0,
+                });
+            }
+            // 按 order 排序
+            boards.sort((a, b) => a.order - b.order);
+            // 渲染
+            boards.forEach(board => {
+                const isGlass = (board.type === 'glass');
+                const card = createCard(board.title, board.description, board.buttonText, board.buttonLink, isGlass);
+                boardDiv.appendChild(card);
+            });
+        }
 
-        const isAdmin = currentProfile?.role === 'admin';
-        const isEditor = currentProfile?.role === 'editor';
+        function setBackground(config) {
+            // 清除已有背景
+            const oldVideo = document.getElementById('bg-video');
+            if (oldVideo) oldVideo.remove();
+            const oldIframe = document.getElementById('bg-iframe');
+            if (oldIframe) oldIframe.remove();
+            document.body.style.backgroundImage = 'none';
 
-        document.getElementById('app').innerHTML = `
-            <div class="navbar">
-                <div class="logo">小鹰宇宙</div>
-                <div class="nav-links">
-                    <a href="#" id="homeLink">首页</a>
-                    ${isEditor || isAdmin ? '<a href="#" id="editorLink">编者后台</a>' : ''}
-                    ${isAdmin ? '<a href="#" id="adminLink">管理后台</a>' : ''}
-                    <div class="user-info">
-                        <span>${currentProfile?.username || currentUser.email}</span>
-                        <span class="role-badge">${isAdmin ? '管理员' : (isEditor ? '编者' : '读者')}</span>
-                        <button id="logoutBtn">退出</button>
-                    </div>
-                </div>
-            </div>
-            <div class="container">
-                <div class="hero">
-                    <h1>故事创写平台</h1>
-                    <p>发现精彩故事，创作你的世界</p>
-                </div>
-                <div class="book-grid">${bookHtml || emptyHtml}</div>
-            </div>
-            <div class="footer"><p>小鹰宇宙 · 共创故事空间</p></div>
-        `;
+            const videoUrl = config.background_video_url;
+            const imageUrl = config.background_image;
 
-        document.getElementById('homeLink')?.addEventListener('click', (e) => { e.preventDefault(); renderHome(); });
-        document.getElementById('editorLink')?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'editor.html'; });
-        document.getElementById('adminLink')?.addEventListener('click', (e) => { e.preventDefault(); window.location.href = 'admin.html'; });
-        document.getElementById('logoutBtn')?.addEventListener('click', async () => { await supabase.auth.signOut(); location.reload(); });
-    }
+            if (videoUrl) {
+                if (videoUrl.includes('bilibili.com') || videoUrl.includes('bilibili')) {
+                    const iframe = document.createElement('iframe');
+                    iframe.id = 'bg-iframe';
+                    let src = videoUrl;
+                    if (!src.startsWith('http')) {
+                        src = `//player.bilibili.com/player.html?bvid=${src}&autoplay=1&loop=1&muted=1&controls=0&disablekb=1&playsinline=1&high_quality=1`;
+                    } else {
+                        if (!src.includes('autoplay')) src += (src.includes('?') ? '&' : '?') + 'autoplay=1';
+                        if (!src.includes('muted')) src += '&muted=1';
+                        if (!src.includes('loop')) src += '&loop=1';
+                    }
+                    iframe.src = src;
+                    iframe.allow = 'autoplay; fullscreen';
+                    iframe.setAttribute('allowfullscreen', 'true');
+                    document.body.appendChild(iframe);
+                } else {
+                    const video = document.createElement('video');
+                    video.id = 'bg-video';
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    const source = document.createElement('source');
+                    source.src = videoUrl;
+                    source.type = 'video/mp4';
+                    video.appendChild(source);
+                    video.onerror = () => video.remove();
+                    document.body.appendChild(video);
+                }
+            } else if (imageUrl) {
+                document.body.style.backgroundImage = `url('${imageUrl}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundRepeat = 'no-repeat';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+        }
 
-    async function init() {
-        const { data: { user } } = await supabase.auth.getUser();
-        currentUser = user;
-        if (!user) { renderLogin(); return; }
-        const { data: profile, error } = await supabase.from('profiles').select('role, username, bio').eq('id', user.id).single();
-        if (error) console.error(error);
-        currentProfile = profile || { role: 'reader', username: user.email.split('@')[0] };
-        await renderHome();
-    }
-    init();
-</script>
+        (async function() {
+            const config = await loadConfig();
+            if (config) {
+                // 主区域透明度与模糊
+                const container = document.getElementById('mainContainer');
+                const containerOpacity = (config.container_opacity !== null ? config.container_opacity : 100) / 100;
+                container.style.background = `rgba(255, 255, 255, ${containerOpacity})`;
+                if (config.container_blur) {
+                    container.classList.add('blur');
+                } else {
+                    container.classList.remove('blur');
+                }
+
+                renderBoard(config);
+                setBackground(config);
+            } else {
+                document.getElementById('board').innerHTML = '<p style="color:red;">配置加载失败，请稍后重试。</p>';
+            }
+        })();
+    </script>
 </body>
 </html>
